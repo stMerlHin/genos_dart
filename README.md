@@ -28,6 +28,16 @@ start using the package.
 
 Useful example in `/example` folder. 
 
+Add genos_dart to pubspec.yaml file as dependency
+
+```yaml
+dependencies:
+  genos_dart:
+    git:
+      url: https://github.com/stMerlHin/genos_dart.git
+      ref: merlhin-dev
+```
+
 First initialize the genos client
 
 ```dart
