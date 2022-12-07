@@ -42,7 +42,7 @@ port: '8080',
 unsecurePort: '80',
 onInitialization: (g) async {
 
-//DO SOMETHING ONCE THE INITILIZATION SI COMPLETED
+//DO SOMETHING ONCE THE INITILIZATION COMPLETED
 
 }
 );
