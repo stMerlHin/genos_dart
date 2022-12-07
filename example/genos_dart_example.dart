@@ -17,23 +17,38 @@ void main() async {
       port: '8080',
       unsecurePort: '80',
       onInitialization: (g) async {
-
-
+        String table = 'client';
+        await GDirectRequest.select(
+            sql: 'SELECT * FROM $table'
+        ).exec(
+          //
+            onSuccess: (Result result) {
+              if(result.data.isNotEmpty) {
+                //result.data is a list of list so we retrieve the first element
+                //which is a list with table colum number as length
+                List myData = result.data.first;
+              }
+            },
+            onError: (String e) {
+              print('ERROR $e');
+            });
 
       }
   );
-  DataListener l = DataListener(
-      table: 'company',
-      tag: '127af730-5b60-11ed-8f30-152c420dff9f'
-  );
-  l.listen(() {
-    print('changed');
-  },
-      onError: (e) {
-        print('On ERROR 1');
-      },
-      secure: false
-  );
+
+  //Listen to specific table with specific value
+  // DataListener l = DataListener(
+  //     table: 'company',
+  //     tag: '127af730-5b60-11ed-8f30-152c420dff9f'
+  // );
+  // l.listen(() {
+  //   print('changed');
+  // },
+  //     onError: (e) {
+  //       print('On ERROR 1');
+  //     },
+  //     secure: false
+  // );
 // Auth auth = await Auth.instance;
   // if(auth.user != null) {
   //   print(auth.user!.toString());
@@ -149,21 +164,7 @@ void main() async {
   //     print(e);
   //   },
   // );
-  String table = 'client';
-  GDirectRequest.select(
-      sql: 'SELECT * FROM $table'
-  ).exec(
-    //
-      onSuccess: (Result result) {
-        if(result.data.isNotEmpty) {
-          //result.data is a list of list so we retrieve the first element
-          //which is a list with table colum number as length
-          List myData = result.data.first;
-        }
-      },
-      onError: (String e) {
-        print('ERROR $e');
-      });
+
 }
 
 void dudExample() async {
