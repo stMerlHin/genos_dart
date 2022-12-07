@@ -58,7 +58,7 @@ String table = 'client';
       onSuccess: (Result result) {
         if(result.data.isNotEmpty) {
           //result.data is a list of list so we retrieve the first element 
-          //which is a list with table colum number as length
+          //which is a list with table colum count as length
           List myData = result.data.first;
         }
       },
