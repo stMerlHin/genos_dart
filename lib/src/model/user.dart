@@ -6,47 +6,51 @@ import '../utils/constants.dart';
 class User {
 
   final String? email;
-  final String? phoneNumber;
+  final String? countryCode;
+  final int? phoneNumber;
   final String? uid;
   final String? password;
-  final String? appLocation;
-  final AuthenticationMode mode;
+  final String appLocalization;
+  final AuthenticationMode authMode;
 
   const User({
     this.email,
+    this.countryCode,
     this.phoneNumber,
-    this.appLocation,
+    this.appLocalization = 'fr',
     this.uid,
     this.password,
-    this.mode = AuthenticationMode.none,
+    this.authMode = AuthenticationMode.none,
   });
 
   String toJson() {
     return jsonEncode(toMap());
   }
 
-  String toNullablePasswordJson() {
-    return jsonEncode(toNullablePasswordMap());
+  String toNullPasswordJson() {
+    return jsonEncode(toNullPasswordMap());
   }
 
   Map<String, dynamic> toMap() {
     return {
       gUserEmail: email,
       gUserPassword: password,
-      gAppLocalisation: appLocation,
+      gAppLocalization: appLocalization,
       gUserUId: uid,
-      gUserAuthMode: mode.toString(),
+      gUserCountryCode: countryCode,
+      gUserAuthMode: authMode.toString(),
       gUserPhoneNumber: phoneNumber,
     };
   }
 
-  Map<String, dynamic> toNullablePasswordMap() {
+  Map<String, dynamic> toNullPasswordMap() {
     return {
       gUserEmail: email,
       gUserPassword: null,
-      gAppLocalisation: appLocation,
+      gAppLocalization: appLocalization,
       gUserUId: uid,
-      gUserAuthMode: mode.toString(),
+      gUserCountryCode: countryCode,
+      gUserAuthMode: authMode.toString(),
       gUserPhoneNumber: phoneNumber,
     };
   }
@@ -56,21 +60,40 @@ class User {
       email: map[gUserEmail],
       password: map[gUserPassword],
       uid: map[gUserUId],
-      appLocation: map[gAppLocalisation],
+      appLocalization: map[gAppLocalization] ?? 'fr',
+      countryCode: map[gUserCountryCode],
       phoneNumber: map[gUserPhoneNumber],
-      mode: AuthenticationMode.parse(map[gUserAuthMode]),
+      authMode: AuthenticationMode.parse(map[gUserAuthMode]),
     );
   }
 
+  factory User.fromAnother(User user, {
+    AuthenticationMode? authMode,
+    String? uid,
+    String? email,
+    String? password,
+    String? countryCode,
+    int? phoneNumber,
+  }) {
+    return User(
+      email: email ?? user.email,
+      countryCode: countryCode ?? user.countryCode,
+      phoneNumber: phoneNumber ?? user.phoneNumber,
+      appLocalization: user.appLocalization ,
+      uid: uid ?? user.uid,
+      password: password ?? user.password,
+      authMode: authMode ?? user.authMode,
+    );
+  }
   factory User.fromJson(String data) {
     Map<String, dynamic> map = jsonDecode(data);
     return User(
       email: map[gUserEmail],
       password: map[gUserPassword],
       uid: map[gUserUId],
-      appLocation: map[gAppLocalisation],
+      appLocalization: map[gAppLocalization],
       phoneNumber: map[gUserPhoneNumber],
-      mode: AuthenticationMode.parse(map[gUserAuthMode]),
+      authMode: AuthenticationMode.parse(map[gUserAuthMode]),
     );
   }
 
