@@ -417,7 +417,7 @@ class GDirectRequest {
       if (response.statusCode == 200) {
         Result result = Result.fromJson(response.body);
         if (result.errorHappened) {
-          onError(result.error);
+          onError(result.error!.message);
         } else {
           onSuccess(result);
         }
