@@ -397,7 +397,7 @@ class GDirectRequest {
 
   Future<void> exec({
     required Function(Result) onSuccess,
-    required Function(String) onError,
+    required Function(RequestError e) onError,
     bool secure = true,
   }) async {
 
@@ -417,15 +417,20 @@ class GDirectRequest {
       if (response.statusCode == 200) {
         Result result = Result.fromJson(response.body);
         if (result.errorHappened) {
-          onError(result.error!.message);
+          onError(result.error!);
         } else {
           onSuccess(result);
         }
       } else {
-        onError(response.body.toString());
+        onError(
+            RequestError(
+                message: response.body.toString(),
+              code: 200
+            )
+        );
       }
     } catch (e)  {
-      onError(e.toString());
+      onError(RequestError(message: e.toString(), code: 400));
     }
   }
 }

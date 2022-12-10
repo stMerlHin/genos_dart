@@ -29,7 +29,7 @@ void main() async {
                 List myData = result.data.first;
               }
             },
-            onError: (String e) {
+            onError: (RequestError e) {
               print('ERROR $e');
             });
 
