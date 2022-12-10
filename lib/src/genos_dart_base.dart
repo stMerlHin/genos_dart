@@ -397,7 +397,7 @@ class GDirectRequest {
 
   Future<void> exec({
     required Function(Result) onSuccess,
-    required Function(RequestError e) onError,
+    required Function(RequestError) onError,
     bool secure = true,
   }) async {
 
