@@ -3,8 +3,6 @@ import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
 
-import '../utils/constants.dart';
-
 class Result {
   final List<dynamic> data;
   final bool errorHappened;
@@ -14,10 +12,11 @@ class Result {
 
   static Result fromJson(String json) {
     var map = jsonDecode(json);
+    Map<String, dynamic>? e = map[gError];
     return Result(
         data: map[gData],
         errorHappened: map[gErrorHappened],
-        error: RequestError.fromMap(map[gError]));
+        error: e == null ? null : RequestError.fromMap(e));
   }
 
   String toJson() {
