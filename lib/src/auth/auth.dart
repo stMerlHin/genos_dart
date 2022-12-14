@@ -5,10 +5,10 @@ import 'package:genos_dart/src/utils/utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import 'genos_dart_base.dart';
-import 'model/result.dart';
-import 'model/user.dart';
-import 'utils/constants.dart';
+import '../genos_dart_base.dart';
+import '../model/result.dart';
+import '../model/user.dart';
+import '../utils/constants.dart';
 
 class Auth {
 
@@ -24,7 +24,8 @@ class Auth {
     String? uid = _preferences.getString(gUserUId);
     if(uid != null) {
       String? email = _preferences.getString(gUserEmail);
-      String? phoneNumber = _preferences.getString(gUserPhoneNumber);
+      String? countryCode = _preferences.getString(gUserCountryCode);
+      int? phoneNumber = _preferences.getInt(gUserPhoneNumber);
       String? authMode = _preferences.getString(gUserAuthMode);
       String? password = _preferences.getString(gUserPassword);
       AuthenticationMode mode = AuthenticationMode.parse(authMode);
@@ -32,8 +33,9 @@ class Auth {
         _user = User(
             uid: uid,
             email: email,
+            countryCode: countryCode,
             phoneNumber: phoneNumber,
-            mode: mode,
+            authMode: mode,
             password: password
         );
       }
@@ -57,7 +59,7 @@ class Auth {
   /// sent via email
   ///[onError] is called when the request terminated with an error
   ///[secure] when it set to true use https and http when it's set to false
-  Future recoverPassword({
+  Future<void> recoverPassword({
     required String email,
     required Function onSuccess,
     required Function(String) onError,
@@ -74,7 +76,7 @@ class Auth {
           body: jsonEncode({
             gAppSignature: Genos.appSignature,
             gUserEmail: email,
-            gAppLocalisation: appLocalization
+            gAppLocalization: appLocalization
           })
       );
 
@@ -103,7 +105,7 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   ///[appLocalization] is the localization of the device running the app, default
   /// to fr
-  Future changePassword({
+  Future<void> changePassword({
     required String email,
     required String password,
     required String newPassword,
@@ -124,7 +126,7 @@ class Auth {
             gUserEmail: email,
             gUserPassword: password,
             gUserNewPassword: newPassword,
-            gAppLocalisation: appLocalization
+            gAppLocalization: appLocalization
           })
       );
 
@@ -145,12 +147,14 @@ class Auth {
   }
 
   ///Login the user with phone number
+  ///[countryCode] the country code of the user
   ///[phoneNumber] the user phone number
   ///[onSuccess] is called when user is login and
   ///[onError] is called when an error occurred.
   ///[secure] when it set to true use https and http when it's set to false
-  Future loginWithPhoneNumber({
-    required String phoneNumber,
+  Future<void> loginWithPhoneNumber({
+    required String countryCode,
+    required int phoneNumber,
     required Function(String) onSuccess,
     required Function(String) onError,
     bool secure = true
@@ -165,6 +169,7 @@ class Auth {
           body: jsonEncode({
             gAppSignature: Genos.appSignature,
             gUserPhoneNumber: phoneNumber,
+            gUserCountryCode: countryCode
           })
       );
 
@@ -176,7 +181,8 @@ class Auth {
           User user = User(
               uid: result.data[gUserUId],
               phoneNumber: phoneNumber,
-              mode: AuthenticationMode.phoneNumber
+              countryCode: countryCode,
+              authMode: AuthenticationMode.phoneNumber
           );
           _preferences.putAll(user.toMap()..addAll({gUserPassword: user.password}));
           _getAuthenticationData();
@@ -192,14 +198,19 @@ class Auth {
   }
 
   ///Update the user phone number
+  ///[countryCode] the current country code of the user
   ///[phoneNumber] is the current phone number of the user
+  ///[newCountryCode] is the new country code of the user
   ///[newPhoneNumber] is the new phone number to use
   ///[onSuccess] is call when the phone number is successfully updated
   ///[onError] is call when the request failed
-  ///[secure] when it set to true use https and http when it's set to false
-  Future changePhoneNumber({
-    required String phoneNumber,
-    required String newPhoneNumber,
+  ///[secure] when it set to true, https is used and http is used
+  ///when it's set to false
+  Future<void> changePhoneNumber({
+    required String countryCode,
+    required int phoneNumber,
+    required String newCountryCode,
+    required int newPhoneNumber,
     required Function() onSuccess,
     required Function(String) onError,
     bool secure = true
@@ -214,8 +225,10 @@ class Auth {
           body: jsonEncode({
             gAppSignature: Genos.appSignature,
             gUserUId: user!.uid,
+            gUserCountryCode: countryCode,
             gUserPhoneNumber: phoneNumber,
-            gNewUserPhoneNumber: newPhoneNumber
+            gNewUserPhoneNumber: newPhoneNumber,
+            gNewUserCountryCode: newCountryCode
           })
       );
 
@@ -225,6 +238,7 @@ class Auth {
           onError(result.errorMessage);
         } else {
           _preferences.put(key: gUserPhoneNumber, value: newPhoneNumber);
+          _preferences.put(key: gUserCountryCode, value: newCountryCode);
           onSuccess();
         }
       } else {
@@ -241,7 +255,7 @@ class Auth {
   ///[onSuccess] is called when the login is successful
   ///[onError] is called when the request terminate with failure
   ///[secure] when it set to true use https and http when it's set to false
-  Future loginWithEmailAndPassword({
+  Future<void> loginWithEmailAndPassword({
     required String email,
     required String password,
     required Function(User) onSuccess,
@@ -291,7 +305,7 @@ class Auth {
   ///  unfortunately detached due to connection issue
   ///[onError] is called when an error occurred
   ///[secure] when it set to true use https and http when it's set to false
-  Future changeEmail({
+  Future<void> changeEmail({
     required String newEmail,
     required String oldEmail,
     required String password,
@@ -371,7 +385,7 @@ class Auth {
   ///  unfortunately detached due to connection issue
   ///[onError] is called when an error occurred
   ///[secure] when it set to true use https and http when it's set to false
-  Future signingWithEmailAndPassword({
+  Future<void> signingWithEmailAndPassword({
     required String email,
     required String password,
     required Function onEmailSent,
@@ -434,6 +448,14 @@ class Auth {
       channel.sink.close();
       onError(e.toString());
     }
+  }
+
+  Future<void> loginWithQRCode({
+  required Function(User) onCodeScanned,
+    required Function(String) onError,
+    bool secure = true
+}) async {
+
   }
 
   ///Log out the user.

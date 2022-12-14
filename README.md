@@ -1,3 +1,4 @@
+
 <!-- 
 This README describes the package. If you publish this package to pub.dev,
 this README's contents appear on the landing page for your package.
@@ -25,11 +26,55 @@ start using the package.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+Useful example in `/example` folder. 
+
+Add genos_dart to pubspec.yaml file as dependency
+
+```yaml
+dependencies:
+  genos_dart:
+    git:
+      url: https://github.com/stMerlHin/genos_dart.git
+      ref: merlhin-dev
+```
+
+First initialize the genos client
 
 ```dart
-const like = 'sample';
+await Genos.instance.initialize(
+appSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+appWsSignature: '91a2dbf0-292d-11ed-91f1-4f98460f464c',
+appPrivateDirectory: '.',
+encryptionKey: '91a2dbf0-292d-11ed-91f1-4f98460d',
+//THE DATABASE SERVER
+host: 'localhost',
+port: '8080',
+unsecurePort: '80',
+onInitialization: (g) async {
+
+//DO SOMETHING ONCE THE INITILIZATION COMPLETED
+
+}
+);
+```
+Make Select query
+
+```dart
+String table = 'client';
+  GDirectRequest.select(
+      sql: 'SELECT * FROM $table'
+  ).exec(
+    //
+      onSuccess: (Result result) {
+        if(result.data.isNotEmpty) {
+          //result.data is a list of list so we retrieve the first element 
+          //which is a list with table colum count as length
+          List myData = result.data.first;
+        }
+      },
+      onError: (String e) {
+        print('ERROR $e');
+      });
 ```
 
 ## Additional information
