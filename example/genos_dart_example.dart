@@ -53,7 +53,8 @@ void main() async {
               if(result.data.isNotEmpty) {
                 //result.data is a list of list so we retrieve the first element
                 //which is a list with table colum number as length
-                List myData = result.data.first;
+                //List myData = result.data;
+                List<Map<String, dynamic>>  myData = result.data;
                 print(myData);
               }
             },
