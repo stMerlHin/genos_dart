@@ -16,17 +16,45 @@ void main() async {
       host: 'localhost',
       port: '8080',
       unsecurePort: '80',
-      onInitialization: (g) async {
-        String table = 'client';
+      onInitialization: (Genos g) async {
+        // await Genos.auth.loginWithQRCode(
+        //   secure: false,
+        //     onSuccess: (User u) {
+        //       print('SUCCESS');
+        //       print(u);
+        //     },
+        //     onCodeReceived: (String code) async {
+        //     ///await Future.delayed(Duration(minutes: 11));
+        //       await Genos.auth.confirmQrCode(
+        //         secure: false,
+        //           qrCodeData: code,
+        //           user: User(email: 'nono', uid: 'oiea'),
+        //           onSuccess: () {
+        //           print('ON SUCCESS');
+        //           },
+        //           onError: (String e) {
+        //             print("Confirmation error $e");
+        //           });
+        //     },
+        //     onError: (String e) {
+        //       print('Login error $e');
+        //     },
+        //     platform: 'Linux',
+        //     onDetached: (String e) {
+        //     print('detached $e');
+        //     }
+        // );
+        String table = 'users';
         await GDirectRequest.select(
             sql: 'SELECT * FROM $table'
         ).exec(
-          //
+          secure: false,
             onSuccess: (Result result) {
               if(result.data.isNotEmpty) {
                 //result.data is a list of list so we retrieve the first element
                 //which is a list with table colum number as length
                 List myData = result.data.first;
+                print(myData);
               }
             },
             onError: (RequestError e) {

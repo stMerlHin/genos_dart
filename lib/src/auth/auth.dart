@@ -423,7 +423,7 @@ class Auth {
       _getAuthenticationData();
       _notifyLoginListener(true);
       onEmailConfirmed?.call(user);
-      channel.sink.close();
+      //channel.sink.close();
 
     }, onError: (e) {
       onListenerDisconnected?.call(e.toString());
@@ -446,27 +446,28 @@ class Auth {
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
         if (result.errorHappened) {
-          channel.sink.close();
+          //channel.sink.close();
           onError(result.errorMessage);
         } else {
           onEmailSent();
         }
       } else {
-        channel.sink.close();
+        //channel.sink.close();
         onError(response.body.toString());
       }
     } catch (e) {
-      channel.sink.close();
+      //channel.sink.close();
       onError(e.toString());
     }
   }
 
   Future<void> loginWithQRCode({
+    required String platform,
     required Function(User) onSuccess,
     required Function(String) onCodeReceived,
-    required Function() onDetached,
+    required Function(String) onDetached,
     required Function(String) onError,
-    required String platform,
+    Function()? onDone,
     bool secure = true
   }) async {
     //final url = Uri.parse(Genos.getEmailSigningUrl(secure));
@@ -474,6 +475,11 @@ class Auth {
     WebSocketChannel channel;
 
     channel = createChannel(Genos.qrLoginRoute, secure);
+
+    channel.sink.add(jsonEncode({
+      gAppWsKey: Genos.appWsSignature,
+      gPlatform: platform
+    }));
 
     channel.stream.listen((event) {
       Map<String, dynamic> data = jsonDecode(event);
@@ -489,23 +495,19 @@ class Auth {
           _getAuthenticationData();
           _notifyLoginListener(true);
 
-          channel.sink.close();
+          //channel.sink.close();
           onSuccess.call(user);
         } else {
-          channel.sink.close();
+          //channel.sink.close();
           onError(auth.errorMessage);
         }
       }
 
     }, onError: (e) {
-      onDetached();
+      onDetached(e.toString());
     }).onDone(() {
+      onDone?.call();
     });
-
-    channel.sink.add(jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
-      gPlatform: platform
-    }));
   }
 
   Future<void> confirmQrCode({
