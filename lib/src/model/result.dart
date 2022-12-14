@@ -66,6 +66,14 @@ class AuthResult {
   }
 
 
+  static AuthResult fromMap(Map<String, dynamic> map) {
+    return AuthResult(
+        data: map[gData],
+        errorHappened: map[gErrorHappened],
+        errorMessage: map[gError]);
+  }
+
+
   String toJson() {
     return jsonEncode({
       gData: data,

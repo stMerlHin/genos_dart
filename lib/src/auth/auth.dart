@@ -451,11 +451,50 @@ class Auth {
   }
 
   Future<void> loginWithQRCode({
-  required Function(User) onCodeScanned,
+    required Function(User) onCodeScanned,
+    required Function(String) onCodeReceived,
+    required Function() onDetached,
     required Function(String) onError,
+    required String platform,
     bool secure = true
-}) async {
+  }) async {
+    //final url = Uri.parse(Genos.getEmailSigningUrl(secure));
 
+    WebSocketChannel channel;
+
+    channel = createChannel(Genos.qrLoginRoute, secure);
+
+    channel.stream.listen((event) {
+      Map<String, dynamic> data = jsonDecode(event);
+      if(data[gPartialData] == true) {
+        onCodeReceived(data[gData]);
+      } else {
+        AuthResult auth = AuthResult.fromJson(event);
+        if(!auth.errorHappened) {
+          User user = User.fromMap(auth.data);
+          //add user to preference
+          _preferences.putAll(user.toMap());
+
+          _getAuthenticationData();
+          _notifyLoginListener(true);
+
+          channel.sink.close();
+          onCodeScanned.call(user);
+        } else {
+          channel.sink.close();
+          onError(auth.errorMessage);
+        }
+      }
+
+    }, onError: (e) {
+      onDetached();
+    }).onDone(() {
+    });
+
+    channel.sink.add(jsonEncode({
+      gAppWsKey: Genos.appWsSignature,
+      gPlatform: platform
+    }));
   }
 
   ///Log out the user.
