@@ -86,7 +86,7 @@ GDirectRequest.select(
         sql: 'SELECT * FROM student WHERE id = ? ',
         values: [3]
    ).exec(
-        onSuccess: (results) {
+        onSuccess: (Result results) {
           results.data.forEach((element) {
             print(element);
 
