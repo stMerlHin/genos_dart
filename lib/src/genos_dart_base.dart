@@ -115,6 +115,8 @@ class Genos {
     '$unsecureBaseUrl' 'auth/email/signing';
   }
 
+  static String get qrLoginRoute => 'auth/qr_code/listen';
+
   static String getEmailLoginUrl([bool secured = true]) {
     return secured ? '$baseUrl' 'auth/email/login' :
     '$unsecureBaseUrl' 'auth/email/login';
@@ -125,9 +127,9 @@ class Genos {
     '$unsecureBaseUrl' 'auth/email/change';
   }
 
-  static String getQRAuthUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/qr' :
-    '$unsecureBaseUrl' 'auth/email/qr';
+  static String getQRConfirmationUrl([bool secured = true]) {
+    return secured ? '$baseUrl' 'auth/qr_code/confirmation' :
+    '$unsecureBaseUrl' 'auth/qr_code/confirmation';
   }
 
   static String getPasswordRecoveryUrl([bool secured = true]) {
@@ -397,7 +399,7 @@ class GDirectRequest {
 
   Future<void> exec({
     required Function(Result) onSuccess,
-    required Function(String) onError,
+    required Function(RequestError) onError,
     bool secure = true,
   }) async {
 
@@ -417,15 +419,20 @@ class GDirectRequest {
       if (response.statusCode == 200) {
         Result result = Result.fromJson(response.body);
         if (result.errorHappened) {
-          onError(result.error);
+          onError(result.error!);
         } else {
           onSuccess(result);
         }
       } else {
-        onError(response.body.toString());
+        onError(
+            RequestError(
+                message: response.body.toString(),
+              code: 200
+            )
+        );
       }
     } catch (e)  {
-      onError(e.toString());
+      onError(RequestError(message: e.toString(), code: 400));
     }
   }
 }
