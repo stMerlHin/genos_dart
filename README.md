@@ -79,6 +79,24 @@ String table = 'client';
       });
 ```
 
+SELECT with VALUES
+
+```dart
+GDirectRequest.select(
+        sql: 'SELECT * FROM student WHERE id = ? ',
+        values: [3]
+   ).exec(
+        onSuccess: (results) {
+          results.data.forEach((element) {
+            print(element);
+
+          });
+        }, 
+        onError: (RequestError error) {
+          print(error);
+    });
+```
+
 ## Additional information
 
 TODO: Tell users more about the package: where to find more information, how to 
