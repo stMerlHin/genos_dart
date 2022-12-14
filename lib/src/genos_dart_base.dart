@@ -127,10 +127,10 @@ class Genos {
     '$unsecureBaseUrl' 'auth/email/change';
   }
 
-  // static String getQRAuthUrl([bool secured = true]) {
-  //   return secured ? '$baseUrl' 'auth/qr' :
-  //   '$unsecureBaseUrl' 'auth/email/qr';
-  // }
+  static String getQRConfirmationUrl([bool secured = true]) {
+    return secured ? '$baseUrl' 'auth/qr_code/confirmation' :
+    '$unsecureBaseUrl' 'auth/qr_code/confirmation';
+  }
 
   static String getPasswordRecoveryUrl([bool secured = true]) {
     return secured ? '$baseUrl' 'auth/email/password/recovering' :

@@ -26,6 +26,7 @@ const String gNewUserCountryCode = 'g_new_user_country_code';
 const String gType = 'type';
 const String gData = 'data';
 const String gPartialData = 'partial_data';
+const String gQrUid = 'qr_uid';
 const String gPlatform = 'platform';
 const String gUid = 'uid';
 const String gAddress = 'address';

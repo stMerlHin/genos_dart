@@ -20,6 +20,17 @@ class Auth {
 
   Auth._();
 
+  ///An instance of the [Auth]
+  static Future<Auth> get instance async {
+    if(!_initialized) {
+      _preferences = await Preferences.getInstance();
+      _getAuthenticationData();
+      _initialized = true;
+      return _instance;
+    }
+    return _instance;
+  }
+
   static void _getAuthenticationData() {
     String? uid = _preferences.getString(gUserUId);
     if(uid != null) {
@@ -451,7 +462,7 @@ class Auth {
   }
 
   Future<void> loginWithQRCode({
-    required Function(User) onCodeScanned,
+    required Function(User) onSuccess,
     required Function(String) onCodeReceived,
     required Function() onDetached,
     required Function(String) onError,
@@ -479,7 +490,7 @@ class Auth {
           _notifyLoginListener(true);
 
           channel.sink.close();
-          onCodeScanned.call(user);
+          onSuccess.call(user);
         } else {
           channel.sink.close();
           onError(auth.errorMessage);
@@ -497,6 +508,41 @@ class Auth {
     }));
   }
 
+  Future<void> confirmQrCode({
+    required String qrCodeData,
+    required User user,
+    required Function() onSuccess,
+    required Function(String) onError,
+    bool secure = true,
+  }) async {
+    final url = Uri.parse(Genos.getQRConfirmationUrl(secure));
+    try {
+      final response = await http.post(
+          url,
+          headers: {
+            'Content-type': 'application/json',
+          },
+          body: jsonEncode({
+            gAppSignature: Genos.appSignature,
+            gUser: user.toNullPasswordMap(),
+            gQrUid: qrCodeData
+          })
+      );
+      if (response.statusCode == 200) {
+        AuthResult result = AuthResult.fromJson(response.body);
+        if (result.errorHappened) {
+          onError(result.errorMessage);
+        } else {
+          onSuccess();
+        }
+      } else {
+        onError(response.body.toString());
+      }
+    } catch (e) {
+      onError(e.toString());
+    }
+  }
+
   ///Log out the user.
   ///This will delete user authentication data on the device
   Future logOut() async {
@@ -505,16 +551,6 @@ class Auth {
     _notifyLoginListener(false);
   }
 
-  ///An instance of the [Auth]
-  static Future<Auth> get instance async {
-    if(!_initialized) {
-      _preferences = await Preferences.getInstance();
-      _getAuthenticationData();
-      _initialized = true;
-      return _instance;
-    }
-    return _instance;
-  }
 
   ///Tells if the current user is authenticated or not
   bool get isAuthenticated => _user != null;
