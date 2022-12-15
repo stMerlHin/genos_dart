@@ -9,15 +9,15 @@ import 'package:uuid/uuid.dart';
 void main() async {
 
   Map<String, dynamic> m = {
-    'Uid': "LE UID",
     "Premium": 3,
+    'Uid': "LE UID",
     "nri": false,
     "bo": null
   };
 
   print(m.valuesAsQuestionMarks);
-  print('woia');
-  print(m.keyWithMarks);
+  print(m.keyWithEqualAndQuestionMarks);
+  print(m.keyWithComma);
 
 
   // await Genos.instance.initialize(

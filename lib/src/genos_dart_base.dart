@@ -482,7 +482,7 @@ extension MapExt on Map<String, dynamic> {
     return r;
   }
 
-  String get keyWithMarks {
+  String get keyWithEqualAndQuestionMarks {
     String str = '';
     List<String> l = [];
     l.addAll(keys);
@@ -490,6 +490,20 @@ extension MapExt on Map<String, dynamic> {
       str = '${l[0]} = ?';
       for (int i = 1; i < l.length; i++) {
         str = '$str, \n${l[i]} = ?';
+      }
+    }
+    return str;
+  }
+
+
+  String get keyWithComma {
+    String str = '';
+    List<String> l = [];
+    l.addAll(keys);
+    if(l.isNotEmpty) {
+      str = l[0];
+      for (int i = 1; i < l.length; i++) {
+        str = '$str, \n${l[i]}';
       }
     }
     return str;
