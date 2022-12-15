@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
-import 'package:genos_dart/src/model/fluent_oject.dart';
+import 'package:genos_dart/src/model/fluent_object.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
