@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
+import 'package:genos_dart/src/model/fluent_oject.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -332,6 +333,20 @@ class GDirectRequest {
         type: GRequestType.insert,
         table: table,
         values: values);
+  }
+
+  factory GDirectRequest.fluentInsert({
+    required String table,
+    required FluentObject object
+  }) {
+    return GDirectRequest(
+        connectionId: Genos.connectionId,
+        sql: "INSERT INTO $table "
+            "(${object.toFluentMap().keyWithComma}) "
+            "VALUES (${object.toFluentMap().valuesAsQuestionMarks})",
+        type: GRequestType.insert,
+        table: table,
+        values: [...object.toFluentMap().values]);
   }
 
   factory GDirectRequest.update({
