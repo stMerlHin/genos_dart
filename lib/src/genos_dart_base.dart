@@ -492,7 +492,7 @@ extension MapExt on Map<String, dynamic> {
         str = '$str, \n${l[i]} = ?';
       }
     }
-    return str;
+    return '$str ';
   }
 
 
@@ -506,7 +506,7 @@ extension MapExt on Map<String, dynamic> {
         str = '$str, \n${l[i]}';
       }
     }
-    return str;
+    return '$str ';
   }
 }
 
