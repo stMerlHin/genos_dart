@@ -464,6 +464,39 @@ enum GRequestType {
   }
 }
 
+extension MapExt on Map<String, dynamic> {
+
+  String get valuesAsQuestionMarks {
+    String r = '';
+    if(length > 0) {
+      r = '?';
+      int i = 0;
+      forEach((key, value) {
+        if(i != 0) {
+          r = '$r, ?';
+        } else {
+          i++;
+        }
+      });
+    }
+    return r;
+  }
+
+  String get keyWithMarks {
+    String str = '';
+    List<String> l = [];
+    l.addAll(keys);
+    if(l.isNotEmpty) {
+      str = '${l[0]} = ?';
+      for (int i = 1; i < l.length; i++) {
+        str = '$str, \n${l[i]} = ?';
+      }
+    }
+    return str;
+  }
+}
+
+
 const String gInterruptionError = 'Connection closed before full header was received';
 const String unavailableHostError = 'Connection refused';
 const String hostLookUpError = 'Failed host lookup';
