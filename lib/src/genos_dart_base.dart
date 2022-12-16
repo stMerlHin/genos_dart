@@ -349,6 +349,20 @@ class GDirectRequest {
         values: [...object.toFluentMap().values]);
   }
 
+  factory GDirectRequest.insertMap({
+    required String table,
+    required Map<String, dynamic> map
+  }) {
+    return GDirectRequest(
+        connectionId: Genos.connectionId,
+        sql: "INSERT INTO $table "
+            "(${map.keyWithComma}) "
+            "VALUES (${map.valuesAsQuestionMarks})",
+        type: GRequestType.insert,
+        table: table,
+        values: [...map.values]);
+  }
+
   factory GDirectRequest.update({
     required String table,
     required String sql,
