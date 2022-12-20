@@ -300,24 +300,29 @@ class GDirectRequest {
   String sql;
   GRequestType type;
   String table;
+  bool dateTimeValueEnabled;
   List<dynamic>? values;
 
-  GDirectRequest(
-      {
-        required this.sql,
-        required this.type,
-        required this.table,
-        this.connectionId,
-        this.values});
+  GDirectRequest({
+    required this.sql,
+    required this.type,
+    required this.table,
+    this.connectionId,
+    this.values,
+    this.dateTimeValueEnabled = false,
+  });
 
+  ///[dateTimeValueEnabled] inform genos that the query will contain Timestamp values
   factory GDirectRequest.select({
     required String sql,
     List<dynamic>? values,
+    bool dateTimeValueEnabled = true,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
         sql: sql,
         type: GRequestType.select,
+        dateTimeValueEnabled: dateTimeValueEnabled,
         table: '',
         values: values);
   }
@@ -420,6 +425,7 @@ class GDirectRequest {
       gAppSignature: Genos.appSignature,
       gConnectionId: connectionId,
       gTable: table,
+      gDateTimeEnable: dateTimeValueEnabled,
       gType: type.toString(),
       gValues: values,
       gSql: sql,
@@ -456,7 +462,7 @@ class GDirectRequest {
         onError(
             RequestError(
                 message: response.body.toString(),
-              code: 200
+                code: 200
             )
         );
       }
