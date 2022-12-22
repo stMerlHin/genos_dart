@@ -216,7 +216,7 @@ class DataListener {
 
   DataListener({required this.table, this.tag});
 
-  void listen(void Function() onChanged, {int reconnectionDelay = 1000,
+  void listen(void Function(ChangeType) onChanged, {int reconnectionDelay = 1000,
     bool secure = true,
     bool refresh = false,
     void Function(String)? onError,
@@ -226,28 +226,27 @@ class DataListener {
     _create(onChanged, secure, onError, onDispose, refresh);
   }
 
-  void _create(void Function() onChanged, bool secure,
+  void _create(void Function(ChangeType) onChanged, bool secure,
       void Function(String)? onError,
       void Function()? onDispose, [bool refresh = false]) {
     _webSocket = createChannel('db/listen', secure);
     _webSocket.sink.add(_toJson());
     _webSocket.stream.listen((event) {
-      //The connection have be close by the server due to duplicate
-      //listening
+      //The connection have be close by the server due to duplicate listening
       if(event == 'close') {
         dispose();
         onDispose?.call();
-        //The connection have be closed due to connection issue
+        //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
         //do something once the connection is reestablished
       } else if(event == 'registered') {
         if(refresh) {
-          onChanged();
+          onChanged(ChangeType.none);
         }
       } else {
         //Change happens on the database
-        onChanged();
+        onChanged(ChangeType.fromString(event));
       }
     }, onError: (e) {
       onError?.call(e.toString());
@@ -273,6 +272,32 @@ class DataListener {
   void dispose() {
     _closeByClient = true;
     _webSocket.sink.close();
+  }
+}
+
+enum ChangeType {
+  select,
+  insert,
+  update,
+  delete,
+  none,
+  unknown;
+  
+  static ChangeType fromString(String value) {
+    switch(value) {
+      case 'select':
+        return ChangeType.select;
+      case 'insert':
+        return ChangeType.insert;
+      case 'update':
+        return ChangeType.update;
+      case 'delete':
+        return ChangeType.delete;
+      case 'registered':
+        return ChangeType.none;
+      default:
+        return ChangeType.unknown;
+    }
   }
 }
 
