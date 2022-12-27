@@ -158,6 +158,20 @@ class Genos {
     '$unsecureBaseUrl' 'subscribe';
   }
 
+  static String getPointImageUploadUrl({
+    required String pointId,
+    bool secured = true}) {
+    return secured ? '$baseUrl' 'upload/$pointId/$gImage/' :
+    '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
+  }
+
+  static String getPointBooksUploadUrl({
+    required String pointId,
+    bool secured = true}) {
+    return secured ? '$baseUrl' 'upload/$pointId/$gImage/' :
+    '$unsecureBaseUrl' 'upload/$pointId/$gBooks/';
+  }
+
   ///The host which runs the http server
   String get host => _gHost;
 
