@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:path/path.dart' as path;
+import 'package:mime_type/mime_type.dart';
 
 typedef OnDownloadProgressCallback = void Function(int receivedBytes,
     int totalBytes);
@@ -639,3 +640,31 @@ Future<String> responseAsString(HttpClientResponse response) {
   }, onDone: () => completer.complete(contents.toString()));
   return completer.future;
 }
+
+Future<void> main() async {
+  // Ouvre le fichier à téléverser
+  var file = File('path/to/file.ext');
+  var fileLength = await file.length();
+  var mimeType = lookupMimeType(file.path);
+
+  // Crée la requête POST
+  var request = http.MultipartRequest('POST', Uri.parse('http://localhost:8080/upload'));
+  request.headers['content-length'] = fileLength.toString();
+  request.headers['content-type'] = 'multipart/form-data; boundary=${request.boundary}';
+  request.files.add(await http.MultipartFile.fromPath('file', file.path, contentType: MediaType.parse(mimeType)));
+
+  // Envoie la requête et traite la réponse
+  var response = await request.send();
+  var received = 0;
+  response.stream.listen((data) {
+    received += data.length;
+    print('${(received / fileLength * 100).toStringAsFixed(2)}% uploaded');
+  }, onDone: () {
+    if (response.statusCode == 200) {
+      print('File uploaded successfully');
+    } else {
+      print('Failed to upload file');
+    }
+  });
+}
+
