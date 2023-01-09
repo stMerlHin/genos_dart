@@ -1,23 +1,15 @@
 
 
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:genos_dart/genos_dart.dart';
 import 'package:genos_dart/src/utils/dud.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-
-  Map<String, dynamic> m = {
-    "Premium": 3,
-    'Uid': "LE UID",
-    "nri": false,
-    "bo": null
-  };
-
-  print(m.valuesAsQuestionMarks);
-  print(m.keyWithEqualAndQuestionMarks);
-  print(m.keyWithComma);
+  dudExample();
 
 
   // await Genos.instance.initialize(
@@ -210,11 +202,20 @@ void main() async {
 
 void dudExample() async {
   DownloadTask d = DownloadTask.create(
-      url: 'http://localhost/download/logo/07099bf0-44d0-11ed-9eed-8be08643a4a6.jpg',
-      savePath: 'cache/photo.jpg',
+      url: 'http://localhost/simple/download',
+      savePath: 'photo.mp4',
       trustBadCertificate: true,
       headers: {
-        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463ch'
+        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
+      }
+  );
+
+  DownloadTask d2 = DownloadTask.resumeFromFile(
+      url: 'http://localhost/simple/download',
+      filePath: 'photo.mp4',
+      trustBadCertificate: true,
+      headers: {
+        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
       }
   );
 
@@ -226,6 +227,10 @@ void dudExample() async {
         //   print('paused ${d.downloadedByte}');
         // }
         print('$pr% ${d.isRunning}');
+        if(pr >= 50) {
+          print('pausing');
+          d.pause();
+        }
       },
       onSuccess: (str) {
         print(str);
@@ -234,27 +239,27 @@ void dudExample() async {
         print(str);
       });
 
-  // Timer(Duration(seconds: 10), () {
-  //   print('RESUMING');
-  //   d.resume(onProgress: (pr) async {
-  //     print('$pr% ${d.isRunning}');
-  //   },
-  //       onSuccess: (str) {
-  //         print('success');
-  //         print(str);
-  //       }, onError: (str) {
-  //         print(str);
-  //       });
-  // });
+  Timer(Duration(seconds: 10), () {
+    print('RESUMING');
+    d.resume(onProgress: (pr) async {
+      print('$pr% ${d.isRunning}');
+    },
+        onSuccess: (str) {
+          print('success');
+          print(str);
+        }, onError: (str) {
+          print(str);
+        });
+  });
 
   // UploadTask.uploadDoc(
   //     headers: {
-  //       "file_name": "big2.avi",
+  //       "file_name": "big2.mp4",
   //       "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-  //       "the_mime": "application/avi"
+  //       "the_mime": "application/mp4"
   //     },
-  //     file: File('big2.avi'),
-  //     destination: 'http://localhost/upload/contracts',
+  //     file: File('big2.mp4'),
+  //     destination: 'http://localhost/upload/books',
   //     onProgress: (progress) {
   //       print(progress);
   //     },
@@ -264,6 +269,27 @@ void dudExample() async {
   //     onError: (e) {
   //       print(e);
   //     });
+
+  // var up = UploadTask.create(
+  //     file: File('big2.mp4'),
+  //     url: 'http://localhost/simple/upload',
+  //     headers: {
+  //       "file_name": "big2.mp4",
+  //       "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+  //       "the_mime": "application/mp4"
+  //     });
+  //
+  // up.run(
+  //     onProgress: (p) {
+  //       print(p);
+  //     },
+  //     onSuccess: (url) {
+  //       print(url);
+  //     },
+  //     onError: (e) {
+  //       print(e);
+  //     }
+  // );
 
   // await UploadTask.uploadFile(
   //     url: 'http://localhost:80/upload/contracts',
