@@ -201,48 +201,85 @@ void main() async {
 }
 
 void dudExample() async {
-  DownloadTask d = DownloadTask.create(
-      url: 'http://localhost/simple/download',
-      savePath: 'photo.mp4',
-      trustBadCertificate: true,
-      headers: {
-        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
-      }
-  );
+  // DownloadTask d = DownloadTask.create(
+  //     url: 'http://localhost/simple/download',
+  //     savePath: 'photo.mp4',
+  //     trustBadCertificate: true,
+  //     headers: {
+  //       'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
+  //     }
+  // );
+  //
+  // DownloadTask d2 = DownloadTask.resumeFromFile(
+  //     url: 'http://localhost/simple/download',
+  //     filePath: 'photo.mp4',
+  //     trustBadCertificate: true,
+  //     headers: {
+  //       'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
+  //     }
+  // );
+  //
+  // await d.run(
+  //     onProgress: (pr) async {
+  //       // if(pr == 50) {
+  //       //   await d.pause();
+  //       //   print(d.isRunning);
+  //       //   print('paused ${d.downloadedByte}');
+  //       // }
+  //       print('$pr% ${d.isRunning}');
+  //       if(pr >= 50) {
+  //         print('pausing');
+  //         d.pause();
+  //       }
+  //     },
+  //     onSuccess: (str) {
+  //       print(str);
+  //     },
+  //     onError: (str) {
+  //       print(str);
+  //     });
+  //
+  // Timer(Duration(seconds: 10), () {
+  //   print('RESUMING');
+  //   d.resume(onProgress: (pr) async {
+  //     print('$pr% ${d.isRunning}');
+  //   },
+  //       onSuccess: (str) {
+  //         print('success');
+  //         print(str);
+  //       }, onError: (str) {
+  //         print(str);
+  //       });
+  // });
 
-  DownloadTask d2 = DownloadTask.resumeFromFile(
-      url: 'http://localhost/simple/download',
-      filePath: 'photo.mp4',
-      trustBadCertificate: true,
+  var up = UploadTask.create(
+      file: File('big2.mp4'),
+      url: 'http://localhost/upload/1/mediathec',
       headers: {
-        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
-      }
-  );
-
-  await d.run(
-      onProgress: (pr) async {
-        // if(pr == 50) {
-        //   await d.pause();
-        //   print(d.isRunning);
-        //   print('paused ${d.downloadedByte}');
-        // }
-        print('$pr% ${d.isRunning}');
-        if(pr >= 50) {
-          print('pausing');
-          d.pause();
-        }
-      },
-      onSuccess: (str) {
-        print(str);
-      },
-      onError: (str) {
-        print(str);
+        gFileName: "average.mp4",
+        "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+        "the_mime": "application/mp4"
       });
 
+  await up.run(
+      onProgress: (pr) {
+        print(pr);
+        if(pr >= 50) {
+          print('pausing');
+          up.pause();
+        }
+      },
+      onSuccess: (url) {
+        print(url);
+      },
+      onError: (e) {
+        print(e);
+      }
+  );
   Timer(Duration(seconds: 10), () {
     print('RESUMING');
-    d.resume(onProgress: (pr) async {
-      print('$pr% ${d.isRunning}');
+    up.resume(onProgress: (pr) async {
+      print('$pr% ng}');
     },
         onSuccess: (str) {
           print('success');
@@ -251,55 +288,5 @@ void dudExample() async {
           print(str);
         });
   });
-
-  // UploadTask.uploadDoc(
-  //     headers: {
-  //       "file_name": "big2.mp4",
-  //       "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-  //       "the_mime": "application/mp4"
-  //     },
-  //     file: File('big2.mp4'),
-  //     destination: 'http://localhost/upload/books',
-  //     onProgress: (progress) {
-  //       print(progress);
-  //     },
-  //     onSuccess: (url) {
-  //       print(url);
-  //     },
-  //     onError: (e) {
-  //       print(e);
-  //     });
-
-  // var up = UploadTask.create(
-  //     file: File('big2.mp4'),
-  //     url: 'http://localhost/simple/upload',
-  //     headers: {
-  //       "file_name": "big2.mp4",
-  //       "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-  //       "the_mime": "application/mp4"
-  //     });
-  //
-  // up.run(
-  //     onProgress: (p) {
-  //       print(p);
-  //     },
-  //     onSuccess: (url) {
-  //       print(url);
-  //     },
-  //     onError: (e) {
-  //       print(e);
-  //     }
-  // );
-
-  // await UploadTask.uploadFile(
-  //     url: 'http://localhost:80/upload/contracts',
-  //   onSuccess: (str) {
-  //       print(str);
-  //   },
-  //   onError: (e) {
-  //       print(e);
-  //   }
-  // );
-
   print('one moment');
 }
