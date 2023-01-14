@@ -301,46 +301,29 @@ class UploadTask extends Task {
 
       request.contentLength = size;
 
-      _subscription = fileStream.listen((data) {
-        _uploadedByte += data.length;
 
-        if (onUploadProgress != null) {
-          onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
-        }
+      Stream<List<int>> streamUpload = fileStream.transform(
+        StreamTransformer.fromHandlers(
+          handleData: (data, sink) {
+            _uploadedByte += data.length;
 
-        request.add(data);
-      },
-         onError: (error) {
+            if (onUploadProgress != null) {
+              onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+            }
+
+            sink.add(data);
+          },
+          handleError: (error, stack, sink) {
             print(error.toString());
           },
-          onDone: () {
-            //sink.close();
+          handleDone: (sink) {
+            sink.close();
             // UPLOAD DONE;
-          });
-      await _subscription.asFuture();
-      //
-      // Stream<List<int>> streamUpload = fileStream.transform(
-      //   StreamTransformer.fromHandlers(
-      //     handleData: (data, sink) {
-      //       _uploadedByte += data.length;
-      //
-      //       if (onUploadProgress != null) {
-      //         onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
-      //       }
-      //
-      //       sink.add(data);
-      //     },
-      //     handleError: (error, stack, sink) {
-      //       print(error.toString());
-      //     },
-      //     handleDone: (sink) {
-      //       sink.close();
-      //       // UPLOAD DONE;
-      //     },
-      //   ),
-      // );
-      //
-      // await request.addStream(streamUpload);
+          },
+        ),
+      );
+
+      await request.addStream(streamUpload);
 
 
       final httpResponse = await request.close();
@@ -503,20 +486,15 @@ class UploadTask extends Task {
 
   @override
   void cancel() async {
-    await _subscription.cancel();
+    //await _subscription.cancel();
     request.abort();
     _uploadedByte = 0;
   }
 
   @override
   void pause() async {
-    //request.abort();
-    await _subscription.cancel();
-    try {
-      request.abort();
-    } catch (e) {
-      print(e);
-    }
+    request.abort();
+    //await _subscription.cancel();
   }
 
   @override
