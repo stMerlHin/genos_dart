@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:genos_dart/genos_dart.dart';
 
 class Result {
-  final List<dynamic> data;
+  final List<Map<String, dynamic>> data;
   final bool errorHappened;
   final RequestError? error;
 
@@ -13,9 +13,18 @@ class Result {
   static Result fromJson(String json) {
     var map = jsonDecode(json);
     Map<String, dynamic>? e = map[gError];
+    List<Map<String, dynamic>> l = [];
+    bool err = map[gErrorHappened];
+
+    map[gData].forEach((element) {
+      l.add(element);
+    });
+
+    map = null;
+
     return Result(
-        data: map[gData],
-        errorHappened: map[gErrorHappened],
+        data: l,
+        errorHappened: err,
         error: e == null ? null : RequestError.fromMap(e));
   }
 
