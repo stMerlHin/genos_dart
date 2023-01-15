@@ -72,8 +72,8 @@ String table = 'client';
           List myData = result.data.first;
         }
       },
-      onError: (String e) {
-        print('ERROR $e');
+      onError: (RequestError e) {
+        print('ERROR ${e.code} ${e.message}');
       });
 ```
 

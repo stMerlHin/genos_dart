@@ -1,28 +1,29 @@
 
 import 'dart:convert';
 
-import '../utils/constants.dart';
+import 'package:genos_dart/genos_dart.dart';
 
 class Result {
   final List<dynamic> data;
   final bool errorHappened;
-  final String error;
+  final RequestError? error;
 
-  Result({this.data = const [], this.errorHappened = false, this.error = ''});
+  Result({this.data = const [], this.errorHappened = false, this.error});
 
   static Result fromJson(String json) {
     var map = jsonDecode(json);
+    Map<String, dynamic>? e = map[gError];
     return Result(
         data: map[gData],
         errorHappened: map[gErrorHappened],
-        error: map[gErrorMessage]);
+        error: e == null ? null : RequestError.fromMap(e));
   }
 
   String toJson() {
     return jsonEncode({
       gData: data,
       gErrorHappened: errorHappened,
-      gErrorMessage: error
+      gError: error?.toMap()
     });
   }
 }
@@ -61,7 +62,15 @@ class AuthResult {
     return AuthResult(
         data: map[gData],
         errorHappened: map[gErrorHappened],
-        errorMessage: map[gErrorMessage]);
+        errorMessage: map[gError]);
+  }
+
+
+  static AuthResult fromMap(Map<String, dynamic> map) {
+    return AuthResult(
+        data: map[gData],
+        errorHappened: map[gErrorHappened],
+        errorMessage: map[gError]);
   }
 
 
@@ -69,7 +78,7 @@ class AuthResult {
     return jsonEncode({
       gData: data,
       gErrorHappened: errorHappened,
-      gErrorMessage: errorMessage
+      gError: errorMessage
     });
   }
 
