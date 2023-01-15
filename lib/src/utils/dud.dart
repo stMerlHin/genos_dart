@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
+
+import '../../genos_dart.dart';
 
 typedef OnDownloadProgressCallback = void Function(int receivedBytes,
     int totalBytes);
@@ -211,6 +214,7 @@ class UploadTask extends Task {
 
   int _uploadedByte = 0;
   final bool multipart;
+  bool _isPaused = true;
 
   UploadTask({
     required String url,
@@ -269,16 +273,17 @@ class UploadTask extends Task {
     required Map<String, dynamic> headers,
     required OnUploadProgressCallback? onUploadProgress,
   }) async {
-
+    _isPaused = false;
     final fileStream = file.openRead(start);
     int size = 0;
     if (!runOnce) {
-      fileSize = file.lengthSync() + start;
+      fileSize = file.lengthSync() - start;
       size = fileSize;
       _uploadedByte = start;
       runOnce = true;
     } else {
-      size = file.lengthSync();
+      size = file.lengthSync() - start;
+      print('size $size');
     }
     try {
       final httpClient = _getHttpClient(
@@ -290,7 +295,7 @@ class UploadTask extends Task {
 
       request.headers.set(HttpHeaders.contentTypeHeader, ContentType.binary.mimeType);
 
-      request.headers.add("filename", path.basename(file.path));
+      //request.headers.add(gFileName, path.basename(file.path));
 
       headers.forEach((key, value) {
         request.headers.add(key, '$value');
@@ -298,16 +303,19 @@ class UploadTask extends Task {
 
       request.contentLength = size;
 
+
       Stream<List<int>> streamUpload = fileStream.transform(
         StreamTransformer.fromHandlers(
           handleData: (data, sink) {
-            _uploadedByte += data.length;
+            if(!_isPaused) {
+              _uploadedByte += data.length;
 
-            if (onUploadProgress != null) {
-              onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+              if (onUploadProgress != null) {
+                onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+              }
+
+              sink.add(data);
             }
-
-            sink.add(data);
           },
           handleError: (error, stack, sink) {
             print(error.toString());
@@ -330,11 +338,13 @@ class UploadTask extends Task {
         return onSuccess(await Task.responseAsString(httpResponse));
       }
     } catch(e) {
-       onError(e.toString());
+      if(!e.toString().contains('Request has been aborted')) {
+        onError(e.toString());
+      }
     }
   }
 
-  static Future<void> fileUploadMultipart({
+  static Future<void> _fileUploadMultipart({
     required File file,
     required Function(String) onSuccess,
     required Function(String) onError,
@@ -421,7 +431,7 @@ class UploadTask extends Task {
     }
   }
 
-  static Future<void> uploadImage({
+  static Future<void> _uploadImage({
     required File file,
     required Function(String) onSuccess,
     required Function(String) onError,
@@ -429,7 +439,7 @@ class UploadTask extends Task {
     Map<String, String> headers = const {},
     OnUploadProgressCallback? onProgress,
   }) async {
-    return fileUploadMultipart(
+    return _fileUploadMultipart(
         onSuccess: onSuccess,
         onError: onError,
         file: file,
@@ -440,7 +450,7 @@ class UploadTask extends Task {
             'image', path.extension(file.path).replaceRange(0, 1, '')));
   }
 
-  static Future<void> uploadDoc({
+  static Future<void> _uploadDoc({
     required File file,
     required Function(String) onSuccess,
     required Function(String) onError,
@@ -448,7 +458,7 @@ class UploadTask extends Task {
     Map<String, String> headers = const {},
     OnUploadProgressCallback? onProgress,
   }) async {
-    return fileUploadMultipart(
+    return _fileUploadMultipart(
         file: file,
         onError: onError,
         destination: destination,
@@ -481,21 +491,27 @@ class UploadTask extends Task {
 
 
   @override
-  void cancel() {
+  void cancel() async {
+    //await _subscription.cancel();
+    _isPaused = true;
     request.abort();
-    file.deleteSync();
     _uploadedByte = 0;
   }
 
   @override
-  void pause() {
+  Future<void> pause() async {
+    _isPaused = true;
     request.abort();
+    //await Future.delayed(Duration(seconds: 1));
+    //await _subscription.cancel();
   }
 
   @override
-  void resume({required CompletedTaskCallback onSuccess, required CompletedTaskCallback onError, TaskProgressCallback? onProgress}) {
+  Future<void> resume({required CompletedTaskCallback onSuccess, required CompletedTaskCallback onError, TaskProgressCallback? onProgress}) async {
     start = _uploadedByte;
-    run(onSuccess: onSuccess, onError: onError);
+    _isPaused = false;
+    headers[gResuming] = _uploadedByte > 0 ? 'true' : null;
+    await run(onSuccess: onSuccess, onError: onError, onProgress: onProgress);
   }
 
 
@@ -542,9 +558,9 @@ abstract class Task {
     runOnce = true;
   }
 
-  void pause();
+  Future<void> pause();
 
-  void resume({
+  Future<void> resume({
     required CompletedTaskCallback onSuccess,
     required CompletedTaskCallback onError,
     TaskProgressCallback? onProgress
