@@ -257,8 +257,7 @@ void dudExample() async {
       url: 'http://localhost/upload/1/mediathec',
       headers: {
         gFileName: "average.mp4",
-        "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-        "the_mime": "application/mp4"
+        gAppSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
       });
 
   await up.run(
@@ -266,7 +265,11 @@ void dudExample() async {
         print(pr);
         if(pr >= 50) {
           print('pausing');
-          up.pause();
+          try {
+            up.cancel();
+          } catch(e) {
+            print('FRF $e');
+          }
         }
       },
       onSuccess: (url) {
@@ -276,17 +279,18 @@ void dudExample() async {
         print(e);
       }
   );
-  Timer(Duration(seconds: 10), () {
+  Timer(Duration(seconds: 5), () {
     print('RESUMING');
-    up.resume(onProgress: (pr) async {
-      print('$pr% ng}');
-    },
+    up.resume(
+        onProgress: (pr) {
+          print('$pr%');
+        },
         onSuccess: (str) {
           print('success');
           print(str);
         }, onError: (str) {
-          print(str);
-        });
+      print(str);
+    });
   });
   print('one moment');
 }

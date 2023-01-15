@@ -214,6 +214,7 @@ class UploadTask extends Task {
 
   int _uploadedByte = 0;
   final bool multipart;
+  bool _isPaused = true;
 
   UploadTask({
     required String url,
@@ -272,16 +273,17 @@ class UploadTask extends Task {
     required Map<String, dynamic> headers,
     required OnUploadProgressCallback? onUploadProgress,
   }) async {
-
+    _isPaused = false;
     final fileStream = file.openRead(start);
     int size = 0;
     if (!runOnce) {
-      fileSize = file.lengthSync() + start;
+      fileSize = file.lengthSync() - start;
       size = fileSize;
       _uploadedByte = start;
       runOnce = true;
     } else {
-      size = file.lengthSync();
+      size = file.lengthSync() - start;
+      print('size $size');
     }
     try {
       final httpClient = _getHttpClient(
@@ -305,13 +307,15 @@ class UploadTask extends Task {
       Stream<List<int>> streamUpload = fileStream.transform(
         StreamTransformer.fromHandlers(
           handleData: (data, sink) {
-            _uploadedByte += data.length;
+            if(!_isPaused) {
+              _uploadedByte += data.length;
 
-            if (onUploadProgress != null) {
-              onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+              if (onUploadProgress != null) {
+                onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+              }
+
+              sink.add(data);
             }
-
-            sink.add(data);
           },
           handleError: (error, stack, sink) {
             print(error.toString());
@@ -334,7 +338,9 @@ class UploadTask extends Task {
         return onSuccess(await Task.responseAsString(httpResponse));
       }
     } catch(e) {
-       onError(e.toString());
+      if(!e.toString().contains('Request has been aborted')) {
+        onError(e.toString());
+      }
     }
   }
 
@@ -487,21 +493,25 @@ class UploadTask extends Task {
   @override
   void cancel() async {
     //await _subscription.cancel();
+    _isPaused = true;
     request.abort();
     _uploadedByte = 0;
   }
 
   @override
-  void pause() async {
+  Future<void> pause() async {
+    _isPaused = true;
     request.abort();
+    //await Future.delayed(Duration(seconds: 1));
     //await _subscription.cancel();
   }
 
   @override
-  void resume({required CompletedTaskCallback onSuccess, required CompletedTaskCallback onError, TaskProgressCallback? onProgress}) {
+  Future<void> resume({required CompletedTaskCallback onSuccess, required CompletedTaskCallback onError, TaskProgressCallback? onProgress}) async {
     start = _uploadedByte;
-    headers[gResuming] = 'true';
-    run(onSuccess: onSuccess, onError: onError);
+    _isPaused = false;
+    headers[gResuming] = _uploadedByte > 0 ? 'true' : null;
+    await run(onSuccess: onSuccess, onError: onError, onProgress: onProgress);
   }
 
 
@@ -548,9 +558,9 @@ abstract class Task {
     runOnce = true;
   }
 
-  void pause();
+  Future<void> pause();
 
-  void resume({
+  Future<void> resume({
     required CompletedTaskCallback onSuccess,
     required CompletedTaskCallback onError,
     TaskProgressCallback? onProgress
