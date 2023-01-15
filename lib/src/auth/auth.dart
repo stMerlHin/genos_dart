@@ -20,17 +20,6 @@ class Auth {
 
   Auth._();
 
-  ///An instance of the [Auth]
-  static Future<Auth> get instance async {
-    if(!_initialized) {
-      _preferences = await Preferences.getInstance();
-      _getAuthenticationData();
-      _initialized = true;
-      return _instance;
-    }
-    return _instance;
-  }
-
   static void _getAuthenticationData() {
     String? uid = _preferences.getString(gUserUId);
     if(uid != null) {
@@ -423,7 +412,7 @@ class Auth {
       _getAuthenticationData();
       _notifyLoginListener(true);
       onEmailConfirmed?.call(user);
-      //channel.sink.close();
+      channel.sink.close();
 
     }, onError: (e) {
       onListenerDisconnected?.call(e.toString());
@@ -446,103 +435,27 @@ class Auth {
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
         if (result.errorHappened) {
-          //channel.sink.close();
+          channel.sink.close();
           onError(result.errorMessage);
         } else {
           onEmailSent();
         }
       } else {
-        //channel.sink.close();
+        channel.sink.close();
         onError(response.body.toString());
       }
     } catch (e) {
-      //channel.sink.close();
+      channel.sink.close();
       onError(e.toString());
     }
   }
 
   Future<void> loginWithQRCode({
-    required String platform,
-    required Function(User) onSuccess,
-    required Function(String) onCodeReceived,
-    required Function(String) onDetached,
+  required Function(User) onCodeScanned,
     required Function(String) onError,
-    Function()? onDone,
     bool secure = true
-  }) async {
-    //final url = Uri.parse(Genos.getEmailSigningUrl(secure));
+}) async {
 
-    WebSocketChannel channel;
-
-    channel = createChannel(Genos.qrLoginRoute, secure);
-
-    channel.sink.add(jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
-      gPlatform: platform
-    }));
-
-    channel.stream.listen((event) {
-      Map<String, dynamic> data = jsonDecode(event);
-      if(data[gPartialData] == true) {
-        onCodeReceived(data[gData]);
-      } else {
-        AuthResult auth = AuthResult.fromJson(event);
-        if(!auth.errorHappened) {
-          User user = User.fromMap(auth.data);
-          //add user to preference
-          _preferences.putAll(user.toMap());
-
-          _getAuthenticationData();
-          _notifyLoginListener(true);
-
-          //channel.sink.close();
-          onSuccess.call(user);
-        } else {
-          //channel.sink.close();
-          onError(auth.errorMessage);
-        }
-      }
-
-    }, onError: (e) {
-      onDetached(e.toString());
-    }).onDone(() {
-      onDone?.call();
-    });
-  }
-
-  Future<void> confirmQrCode({
-    required String qrCodeData,
-    required User user,
-    required Function() onSuccess,
-    required Function(String) onError,
-    bool secure = true,
-  }) async {
-    final url = Uri.parse(Genos.getQRConfirmationUrl(secure));
-    try {
-      final response = await http.post(
-          url,
-          headers: {
-            'Content-type': 'application/json',
-          },
-          body: jsonEncode({
-            gAppSignature: Genos.appSignature,
-            gUser: user.toNullPasswordMap(),
-            gQrUid: qrCodeData
-          })
-      );
-      if (response.statusCode == 200) {
-        AuthResult result = AuthResult.fromJson(response.body);
-        if (result.errorHappened) {
-          onError(result.errorMessage);
-        } else {
-          onSuccess();
-        }
-      } else {
-        onError(response.body.toString());
-      }
-    } catch (e) {
-      onError(e.toString());
-    }
   }
 
   ///Log out the user.
@@ -553,6 +466,16 @@ class Auth {
     _notifyLoginListener(false);
   }
 
+  ///An instance of the [Auth]
+  static Future<Auth> get instance async {
+    if(!_initialized) {
+      _preferences = await Preferences.getInstance();
+      _getAuthenticationData();
+      _initialized = true;
+      return _instance;
+    }
+    return _instance;
+  }
 
   ///Tells if the current user is authenticated or not
   bool get isAuthenticated => _user != null;

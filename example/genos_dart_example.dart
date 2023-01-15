@@ -8,74 +8,33 @@ import 'package:uuid/uuid.dart';
 
 void main() async {
 
-  Map<String, dynamic> m = {
-    "Premium": 3,
-    'Uid': "LE UID",
-    "nri": false,
-    "bo": null
-  };
+  await Genos.instance.initialize(
+      appSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+      appWsSignature: '91a2dbf0-292d-11ed-91f1-4f98460f464c',
+      appPrivateDirectory: '.',
+      encryptionKey: '91a2dbf0-292d-11ed-91f1-4f98460d',
+      host: 'localhost',
+      port: '8080',
+      unsecurePort: '80',
+      onInitialization: (g) async {
+        String table = 'client';
+        await GDirectRequest.select(
+            sql: 'SELECT * FROM $table'
+        ).exec(
+          //
+            onSuccess: (Result result) {
+              if(result.data.isNotEmpty) {
+                //result.data is a list of list so we retrieve the first element
+                //which is a list with table colum number as length
+                List myData = result.data.first;
+              }
+            },
+            onError: (String e) {
+              print('ERROR $e');
+            });
 
-  print(m.valuesAsQuestionMarks);
-  print(m.keyWithEqualAndQuestionMarks);
-  print(m.keyWithComma);
-
-
-  // await Genos.instance.initialize(
-  //     appSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-  //     appWsSignature: '91a2dbf0-292d-11ed-91f1-4f98460f464c',
-  //     appPrivateDirectory: '.',
-  //     encryptionKey: '91a2dbf0-292d-11ed-91f1-4f98460d',
-  //     host: 'localhost',
-  //     port: '8080',
-  //     unsecurePort: '80',
-  //     onInitialization: (Genos g) async {
-  //       // await Genos.auth.loginWithQRCode(
-  //       //   secure: false,
-  //       //     onSuccess: (User u) {
-  //       //       print('SUCCESS');
-  //       //       print(u);
-  //       //     },
-  //       //     onCodeReceived: (String code) async {
-  //       //     ///await Future.delayed(Duration(minutes: 11));
-  //       //       await Genos.auth.confirmQrCode(
-  //       //         secure: false,
-  //       //           qrCodeData: code,
-  //       //           user: User(email: 'nono', uid: 'oiea'),
-  //       //           onSuccess: () {
-  //       //           print('ON SUCCESS');
-  //       //           },
-  //       //           onError: (String e) {
-  //       //             print("Confirmation error $e");
-  //       //           });
-  //       //     },
-  //       //     onError: (String e) {
-  //       //       print('Login error $e');
-  //       //     },
-  //       //     platform: 'Linux',
-  //       //     onDetached: (String e) {
-  //       //     print('detached $e');
-  //       //     }
-  //       // );
-  //       String table = 'users';
-  //       await GDirectRequest.select(
-  //           sql: 'SELECT * FROM $table'
-  //       ).exec(
-  //         secure: false,
-  //           onSuccess: (Result result) {
-  //             if(result.data.isNotEmpty) {
-  //               //result.data is a list of list so we retrieve the first element
-  //               //which is a list with table colum number as length
-  //               //List myData = result.data;
-  //               List<Map<String, dynamic>>  myData = result.data;
-  //               print(myData);
-  //             }
-  //           },
-  //           onError: (RequestError e) {
-  //             print('ERROR $e');
-  //           });
-  //
-  //     }
-  // );
+      }
+  );
 
   //Listen to specific table with specific value
   // DataListener l = DataListener(
