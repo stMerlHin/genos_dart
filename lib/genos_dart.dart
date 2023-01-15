@@ -8,5 +8,7 @@ export 'src/model/user.dart';
 export 'src/auth/auth.dart';
 export 'src/utils/constants.dart';
 export 'src/utils/dud.dart';
+export 'src/model/request_error.dart';
+export 'src/model/fluent_object.dart';
 export 'src/utils/utils.dart';
 export 'src/model/result.dart';

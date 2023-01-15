@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
+import 'package:genos_dart/src/model/fluent_object.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -115,6 +116,8 @@ class Genos {
     '$unsecureBaseUrl' 'auth/email/signing';
   }
 
+  static String get qrLoginRoute => 'auth/qr_code/listen';
+
   static String getEmailLoginUrl([bool secured = true]) {
     return secured ? '$baseUrl' 'auth/email/login' :
     '$unsecureBaseUrl' 'auth/email/login';
@@ -125,9 +128,9 @@ class Genos {
     '$unsecureBaseUrl' 'auth/email/change';
   }
 
-  static String getQRAuthUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/qr' :
-    '$unsecureBaseUrl' 'auth/email/qr';
+  static String getQRConfirmationUrl([bool secured = true]) {
+    return secured ? '$baseUrl' 'auth/qr_code/confirmation' :
+    '$unsecureBaseUrl' 'auth/qr_code/confirmation';
   }
 
   static String getPasswordRecoveryUrl([bool secured = true]) {
@@ -153,6 +156,20 @@ class Genos {
   static String getSubscriptionUrl([bool secured = true]) {
     return secured ? '$baseUrl' 'subscribe' :
     '$unsecureBaseUrl' 'subscribe';
+  }
+
+  static String getPointImageUploadUrl({
+    required String pointId,
+    bool secured = true}) {
+    return secured ? '$baseUrl' 'upload/$pointId/$gImage/' :
+    '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
+  }
+
+  static String getPointBooksUploadUrl({
+    required String pointId,
+    bool secured = true}) {
+    return secured ? '$baseUrl' 'upload/$pointId/$gImage/' :
+    '$unsecureBaseUrl' 'upload/$pointId/$gBooks/';
   }
 
   ///The host which runs the http server
@@ -213,7 +230,7 @@ class DataListener {
 
   DataListener({required this.table, this.tag});
 
-  void listen(void Function() onChanged, {int reconnectionDelay = 1000,
+  void listen(void Function(ChangeType) onChanged, {int reconnectionDelay = 1000,
     bool secure = true,
     bool refresh = false,
     void Function(String)? onError,
@@ -223,28 +240,27 @@ class DataListener {
     _create(onChanged, secure, onError, onDispose, refresh);
   }
 
-  void _create(void Function() onChanged, bool secure,
+  void _create(void Function(ChangeType) onChanged, bool secure,
       void Function(String)? onError,
       void Function()? onDispose, [bool refresh = false]) {
     _webSocket = createChannel('db/listen', secure);
     _webSocket.sink.add(_toJson());
     _webSocket.stream.listen((event) {
-      //The connection have be close by the server due to duplicate
-      //listening
+      //The connection have be close by the server due to duplicate listening
       if(event == 'close') {
         dispose();
         onDispose?.call();
-        //The connection have be closed due to connection issue
+        //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
         //do something once the connection is reestablished
       } else if(event == 'registered') {
         if(refresh) {
-          onChanged();
+          onChanged(ChangeType.none);
         }
       } else {
         //Change happens on the database
-        onChanged();
+        onChanged(ChangeType.fromString(event));
       }
     }, onError: (e) {
       onError?.call(e.toString());
@@ -273,6 +289,32 @@ class DataListener {
   }
 }
 
+enum ChangeType {
+  select,
+  insert,
+  update,
+  delete,
+  none,
+  unknown;
+  
+  static ChangeType fromString(String value) {
+    switch(value) {
+      case 'select':
+        return ChangeType.select;
+      case 'insert':
+        return ChangeType.insert;
+      case 'update':
+        return ChangeType.update;
+      case 'delete':
+        return ChangeType.delete;
+      case 'registered':
+        return ChangeType.none;
+      default:
+        return ChangeType.unknown;
+    }
+  }
+}
+
 WebSocketChannel createChannel(String url, [bool secure = true]) {
   return WebSocketChannel.connect(Uri.parse('${secure ? Genos.wsBaseUrl :
   Genos.unSecureWsBaseUrl}' '$url'));
@@ -297,24 +339,29 @@ class GDirectRequest {
   String sql;
   GRequestType type;
   String table;
+  bool dateTimeValueEnabled;
   List<dynamic>? values;
 
-  GDirectRequest(
-      {
-        required this.sql,
-        required this.type,
-        required this.table,
-        this.connectionId,
-        this.values});
+  GDirectRequest({
+    required this.sql,
+    required this.type,
+    required this.table,
+    this.connectionId,
+    this.values,
+    this.dateTimeValueEnabled = false,
+  });
 
+  ///[dateTimeValueEnabled] inform genos that the query will contain Timestamp values
   factory GDirectRequest.select({
     required String sql,
     List<dynamic>? values,
+    bool dateTimeValueEnabled = true,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
         sql: sql,
         type: GRequestType.select,
+        dateTimeValueEnabled: dateTimeValueEnabled,
         table: '',
         values: values);
   }
@@ -330,6 +377,34 @@ class GDirectRequest {
         type: GRequestType.insert,
         table: table,
         values: values);
+  }
+
+  factory GDirectRequest.fluentInsert({
+    required String table,
+    required FluentObject object
+  }) {
+    return GDirectRequest(
+        connectionId: Genos.connectionId,
+        sql: "INSERT INTO $table "
+            "(${object.toFluentMap().keyWithComma}) "
+            "VALUES (${object.toFluentMap().valuesAsQuestionMarks})",
+        type: GRequestType.insert,
+        table: table,
+        values: [...object.toFluentMap().values]);
+  }
+
+  factory GDirectRequest.insertMap({
+    required String table,
+    required Map<String, dynamic> map
+  }) {
+    return GDirectRequest(
+        connectionId: Genos.connectionId,
+        sql: "INSERT INTO $table "
+            "(${map.keyWithComma}) "
+            "VALUES (${map.valuesAsQuestionMarks})",
+        type: GRequestType.insert,
+        table: table,
+        values: [...map.values]);
   }
 
   factory GDirectRequest.update({
@@ -389,6 +464,7 @@ class GDirectRequest {
       gAppSignature: Genos.appSignature,
       gConnectionId: connectionId,
       gTable: table,
+      gDateTimeEnable: dateTimeValueEnabled,
       gType: type.toString(),
       gValues: values,
       gSql: sql,
@@ -397,7 +473,7 @@ class GDirectRequest {
 
   Future<void> exec({
     required Function(Result) onSuccess,
-    required Function(String) onError,
+    required Function(RequestError) onError,
     bool secure = true,
   }) async {
 
@@ -417,15 +493,20 @@ class GDirectRequest {
       if (response.statusCode == 200) {
         Result result = Result.fromJson(response.body);
         if (result.errorHappened) {
-          onError(result.error);
+          onError(result.error!);
         } else {
           onSuccess(result);
         }
       } else {
-        onError(response.body.toString());
+        onError(
+            RequestError(
+                message: response.body.toString(),
+                code: 200
+            )
+        );
       }
     } catch (e)  {
-      onError(e.toString());
+      onError(RequestError(message: e.toString(), code: 400));
     }
   }
 }
@@ -456,6 +537,53 @@ enum GRequestType {
     }
   }
 }
+
+extension MapExt on Map<String, dynamic> {
+
+  String get valuesAsQuestionMarks {
+    String r = '';
+    if(length > 0) {
+      r = '?';
+      int i = 0;
+      forEach((key, value) {
+        if(i != 0) {
+          r = '$r, ?';
+        } else {
+          i++;
+        }
+      });
+    }
+    return r;
+  }
+
+  String get keyWithEqualAndQuestionMarks {
+    String str = '';
+    List<String> l = [];
+    l.addAll(keys);
+    if(l.isNotEmpty) {
+      str = '${l[0]} = ?';
+      for (int i = 1; i < l.length; i++) {
+        str = '$str, \n${l[i]} = ?';
+      }
+    }
+    return '$str ';
+  }
+
+
+  String get keyWithComma {
+    String str = '';
+    List<String> l = [];
+    l.addAll(keys);
+    if(l.isNotEmpty) {
+      str = l[0];
+      for (int i = 1; i < l.length; i++) {
+        str = '$str, \n${l[i]}';
+      }
+    }
+    return '$str ';
+  }
+}
+
 
 const String gInterruptionError = 'Connection closed before full header was received';
 const String unavailableHostError = 'Connection refused';
