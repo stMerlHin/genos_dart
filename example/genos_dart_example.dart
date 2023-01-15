@@ -1,23 +1,15 @@
 
 
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:genos_dart/genos_dart.dart';
 import 'package:genos_dart/src/utils/dud.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-
-  Map<String, dynamic> m = {
-    "Premium": 3,
-    'Uid': "LE UID",
-    "nri": false,
-    "bo": null
-  };
-
-  print(m.valuesAsQuestionMarks);
-  print(m.keyWithEqualAndQuestionMarks);
-  print(m.keyWithComma);
+  dudExample();
 
 
   // await Genos.instance.initialize(
@@ -209,31 +201,44 @@ void main() async {
 }
 
 void dudExample() async {
-  DownloadTask d = DownloadTask.create(
-      url: 'http://localhost/download/logo/07099bf0-44d0-11ed-9eed-8be08643a4a6.jpg',
-      savePath: 'cache/photo.jpg',
-      trustBadCertificate: true,
-      headers: {
-        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463ch'
-      }
-  );
-
-  await d.run(
-      onProgress: (pr) async {
-        // if(pr == 50) {
-        //   await d.pause();
-        //   print(d.isRunning);
-        //   print('paused ${d.downloadedByte}');
-        // }
-        print('$pr% ${d.isRunning}');
-      },
-      onSuccess: (str) {
-        print(str);
-      },
-      onError: (str) {
-        print(str);
-      });
-
+  // DownloadTask d = DownloadTask.create(
+  //     url: 'http://localhost/simple/download',
+  //     savePath: 'photo.mp4',
+  //     trustBadCertificate: true,
+  //     headers: {
+  //       'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
+  //     }
+  // );
+  //
+  // DownloadTask d2 = DownloadTask.resumeFromFile(
+  //     url: 'http://localhost/simple/download',
+  //     filePath: 'photo.mp4',
+  //     trustBadCertificate: true,
+  //     headers: {
+  //       'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
+  //     }
+  // );
+  //
+  // await d.run(
+  //     onProgress: (pr) async {
+  //       // if(pr == 50) {
+  //       //   await d.pause();
+  //       //   print(d.isRunning);
+  //       //   print('paused ${d.downloadedByte}');
+  //       // }
+  //       print('$pr% ${d.isRunning}');
+  //       if(pr >= 50) {
+  //         print('pausing');
+  //         d.pause();
+  //       }
+  //     },
+  //     onSuccess: (str) {
+  //       print(str);
+  //     },
+  //     onError: (str) {
+  //       print(str);
+  //     });
+  //
   // Timer(Duration(seconds: 10), () {
   //   print('RESUMING');
   //   d.resume(onProgress: (pr) async {
@@ -247,33 +252,45 @@ void dudExample() async {
   //       });
   // });
 
-  // UploadTask.uploadDoc(
-  //     headers: {
-  //       "file_name": "big2.avi",
-  //       "app_signature": '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-  //       "the_mime": "application/avi"
-  //     },
-  //     file: File('big2.avi'),
-  //     destination: 'http://localhost/upload/contracts',
-  //     onProgress: (progress) {
-  //       print(progress);
-  //     },
-  //     onSuccess: (url) {
-  //       print(url);
-  //     },
-  //     onError: (e) {
-  //       print(e);
-  //     });
+  var up = UploadTask.create(
+      file: File('big2.mp4'),
+      url: 'http://localhost/upload/1/mediathec',
+      headers: {
+        gFileName: "average.mp4",
+        gAppSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+      });
 
-  // await UploadTask.uploadFile(
-  //     url: 'http://localhost:80/upload/contracts',
-  //   onSuccess: (str) {
-  //       print(str);
-  //   },
-  //   onError: (e) {
-  //       print(e);
-  //   }
-  // );
-
+  await up.run(
+      onProgress: (pr) {
+        print(pr);
+        if(pr >= 50) {
+          print('pausing');
+          try {
+            up.cancel();
+          } catch(e) {
+            print('FRF $e');
+          }
+        }
+      },
+      onSuccess: (url) {
+        print(url);
+      },
+      onError: (e) {
+        print(e);
+      }
+  );
+  Timer(Duration(seconds: 5), () {
+    print('RESUMING');
+    up.resume(
+        onProgress: (pr) {
+          print('$pr%');
+        },
+        onSuccess: (str) {
+          print('success');
+          print(str);
+        }, onError: (str) {
+      print(str);
+    });
+  });
   print('one moment');
 }

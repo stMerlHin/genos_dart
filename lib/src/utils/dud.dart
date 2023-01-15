@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 import 'package:path/path.dart' as path;
+
+import '../../genos_dart.dart';
 
 typedef OnDownloadProgressCallback = void Function(int receivedBytes,
     int totalBytes);
@@ -16,11 +19,7 @@ typedef CompletedTaskCallback = void Function(dynamic);
 class DownloadTask extends Task {
   final String savePath;
   late FileMode fileMode;
-
-  int _fileSize = -1;
   int _downloadedByte = 0;
-  late File _file;
-  bool _canBePaused = false;
   bool _canceled = false;
   bool _paused = false;
   bool _running = false;
@@ -35,6 +34,7 @@ class DownloadTask extends Task {
   }) {
     this.url = url;
     this.start = start;
+    file = File(savePath);
     badCertificateCallback =
     ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
@@ -72,19 +72,18 @@ class DownloadTask extends Task {
     );
   }
 
-  static Future<DownloadTask> resumeFromFile({
+  factory DownloadTask.resumeFromFile({
     required String url,
     required String filePath,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
-  }) async {
+  }) {
     File file = File(filePath);
-    bool exists = await file.exists();
+    bool exists = file.existsSync();
     int length = 0;
     if(exists) {
-      length = await file.length();
+      length = file.lengthSync();
     }
-
     return DownloadTask.resume(
       url: url,
       savePath: filePath,
@@ -124,27 +123,29 @@ class DownloadTask extends Task {
       });
 
       var httpResponse = await request.close();
-      String errorMessage = httpResponse.reasonPhrase;
+      //String errorMessage = httpResponse.reasonPhrase;
 
       if (!runOnce) {
-        _fileSize = httpResponse.contentLength;
+        fileSize = httpResponse.contentLength + start;
+        _downloadedByte = start;
         runOnce = true;
       }
 
       if(httpResponse.statusCode == 200) {
-        _file = File(savePath);
 
-        var downloadedFile = _file.openSync(mode: fileMode);
+        var downloadedFile = file.openSync(mode: fileMode);
 
         _subscription = httpResponse.listen((data) {
           _downloadedByte += data.length;
 
           downloadedFile.writeFromSync(data);
 
-          onProgress?.call(((_downloadedByte / _fileSize) * 100).toInt());
+          onProgress?.call(((_downloadedByte / fileSize) * 100).toInt());
         },
           onDone: () {
             downloadedFile.closeSync();
+            _running = false;
+            onSuccess(file.path);
           },
           onError: (e) {
             downloadedFile.closeSync();
@@ -157,9 +158,6 @@ class DownloadTask extends Task {
             onError('Connection error');
             _running = false;
           });
-
-        _running = false;
-        onSuccess(_file.path);
 
       } else {
         _running = false;
@@ -181,7 +179,7 @@ class DownloadTask extends Task {
     await _subscription.cancel();
     _running = false;
     request.abort();
-    _file.deleteSync();
+    file.deleteSync();
     start = 0;
     _downloadedByte = 0;
     fileMode = FileMode.write;
@@ -212,63 +210,141 @@ class DownloadTask extends Task {
 
 }
 
-class UploadTask {
-  //
-  // Future<String> fileUpload(
-  //     {required File file, OnUploadProgressCallback? onUploadProgress}) async {
-  //
-  //   final fileStream = file.openRead();
-  //
-  //   int totalByteLength = file.lengthSync();
-  //
-  //   final httpClient = getHttpClient(
-  //       onBadCertificate: ((X509Certificate cert, String host, int port) => true)
-  //   );
-  //
-  //   final request = await httpClient.postUrl(Uri.parse(url));
-  //
-  //   request.headers.set(HttpHeaders.contentTypeHeader, ContentType.binary);
-  //
-  //   request.headers.add("filename", path.basename(file.path));
-  //   request.headers.add("multipart", '$multipart');
-  //
-  //   request.contentLength = totalByteLength;
-  //
-  //   int byteCount = 0;
-  //   Stream<List<int>> streamUpload = fileStream.transform(
-  //     StreamTransformer.fromHandlers(
-  //       handleData: (data, sink) {
-  //         byteCount += data.length;
-  //
-  //         if (onUploadProgress != null) {
-  //           onUploadProgress(((byteCount / totalByteLength) * 100).toInt());
-  //         }
-  //
-  //         sink.add(data);
-  //       },
-  //       handleError: (error, stack, sink) {
-  //         print(error.toString());
-  //       },
-  //       handleDone: (sink) {
-  //         sink.close();
-  //         // UPLOAD DONE;
-  //       },
-  //     ),
-  //   );
-  //
-  //   await request.addStream(streamUpload);
-  //
-  //
-  //   final httpResponse = await request.close();
-  //
-  //   if (httpResponse.statusCode != 200) {
-  //     throw Exception('Error uploading file');
-  //   } else {
-  //     return await Task.responseAsString(httpResponse);
-  //   }
-  // }
+class UploadTask extends Task {
 
-  static Future<void> fileUploadMultipart({
+  int _uploadedByte = 0;
+  final bool multipart;
+  bool _isPaused = true;
+
+  UploadTask({
+    required String url,
+    required File file,
+    required this.multipart,
+    bool trustBadCertificate = false,
+    int start = 0,
+    Map<String, dynamic> headers = const {},
+  }) {
+    this.url = url;
+    this.start = start;
+    this.file = file;
+    badCertificateCallback =
+    ((X509Certificate cert, String host, int port) => trustBadCertificate);
+    this.headers = headers;
+  }
+
+  factory UploadTask.resume({
+    required String url,
+    required File file,
+    required int start,
+    bool multipart = false,
+    bool trustBadCertificate = false,
+    Map<String, dynamic> headers = const {},
+  }) {
+    return UploadTask(
+        url: url,
+        file: file,
+        start: start,
+        multipart: false,
+        trustBadCertificate: trustBadCertificate,
+        headers: headers
+    );
+  }
+
+  factory UploadTask.create({
+    required String url,
+    required File file,
+    bool multipart = false,
+    bool trustBadCertificate = false,
+    Map<String, dynamic> headers = const {},
+  }) {
+    return UploadTask(
+      url: url,
+      multipart: false,
+      file: file,
+      trustBadCertificate: trustBadCertificate,
+      headers: headers,
+    );
+  }
+
+  Future<void> _streamUpload({
+    required Function(String) onSuccess,
+    required Function(String) onError,
+    required int start,
+    required Map<String, dynamic> headers,
+    required OnUploadProgressCallback? onUploadProgress,
+  }) async {
+    _isPaused = false;
+    final fileStream = file.openRead(start);
+    int size = 0;
+    if (!runOnce) {
+      fileSize = file.lengthSync() - start;
+      size = fileSize;
+      _uploadedByte = start;
+      runOnce = true;
+    } else {
+      size = file.lengthSync() - start;
+      print('size $size');
+    }
+    try {
+      final httpClient = _getHttpClient(
+          onBadCertificate: ((X509Certificate cert, String host,
+              int port) => true)
+      );
+
+      request = await httpClient.postUrl(Uri.parse(url));
+
+      request.headers.set(HttpHeaders.contentTypeHeader, ContentType.binary.mimeType);
+
+      //request.headers.add(gFileName, path.basename(file.path));
+
+      headers.forEach((key, value) {
+        request.headers.add(key, '$value');
+      });
+
+      request.contentLength = size;
+
+
+      Stream<List<int>> streamUpload = fileStream.transform(
+        StreamTransformer.fromHandlers(
+          handleData: (data, sink) {
+            if(!_isPaused) {
+              _uploadedByte += data.length;
+
+              if (onUploadProgress != null) {
+                onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+              }
+
+              sink.add(data);
+            }
+          },
+          handleError: (error, stack, sink) {
+            print(error.toString());
+          },
+          handleDone: (sink) {
+            sink.close();
+            // UPLOAD DONE;
+          },
+        ),
+      );
+
+      await request.addStream(streamUpload);
+
+
+      final httpResponse = await request.close();
+
+      if (httpResponse.statusCode != 200) {
+        onError(await Task.responseAsString(httpResponse));
+      } else {
+        return onSuccess(await Task.responseAsString(httpResponse));
+      }
+    } catch(e) {
+      if(!e.toString().contains('Request has been aborted')) {
+        onError(e.toString());
+      }
+    }
+  }
+
+  static Future<void> _fileUploadMultipart({
     required File file,
     required Function(String) onSuccess,
     required Function(String) onError,
@@ -278,7 +354,6 @@ class UploadTask {
     required String destination,
   }) async {
     final url = destination;
-
     final httpClient = _getHttpClient(
         onBadCertificate: ((X509Certificate cert, String host, int port) => true)
     );
@@ -356,96 +431,7 @@ class UploadTask {
     }
   }
 
-  // static uploadFile({
-  //   required String url,
-  //   required File file,
-  //   required void Function(String) onSuccess,
-  //   required void Function(String) onError,
-  //   Map<String, String> headers = const {}
-  // }) async {
-  //   var stream =
-  //   http.ByteStream(file.openRead());
-  //   // get file length
-  //   var length = await file.length(); //imageFile is your image file
-  //   int byteCount = 0; // ignore this headers if there is no authentication
-  //
-  //   // string to uri
-  //   var uri = Uri.parse(url);
-  //
-  //   // create multipart request
-  //   var request = http.MultipartRequest("POST", uri);
-  //
-  //   Stream<List<int>> streamUpload = stream.transform(
-  //     StreamTransformer.fromHandlers(
-  //       handleData: (data, sink) {
-  //         sink.add(data);
-  //
-  //         byteCount += data.length;
-  //
-  //         // if (onUploadProgress != null) {
-  //         //   if (percentage != ((byteCount / length) * 100).toInt()) {
-  //         //     onUploadProgress(((byteCount / totalByteLength) * 100).toInt());
-  //         //     percentage = ((byteCount / totalByteLength) * 100).toInt();
-  //         //   }
-  //         //   // CALL STATUS CALLBACK;
-  //         // }
-  //         print(((byteCount / length) * 100).toInt());
-  //       },
-  //       handleError: (error, stack, sink) {
-  //         throw error;
-  //       },
-  //       handleDone: (sink) {
-  //         sink.close();
-  //         // UPLOAD DONE;
-  //       },
-  //     ),
-  //   );
-  //
-  //
-  //   // multipart that takes file
-  //   var multipartFileSign =  http.MultipartFile('profile_pic', streamUpload, length,
-  //       filename: 'big2.avi');
-  //
-  //   // add file to multipart
-  //   request.files.add(multipartFileSign);
-  //
-  //   Map<String, String> header = {
-  //
-  //   };
-  //
-  //   header[HttpHeaders.contentTypeHeader] = 'application/octet-stream';
-  //   header['file_name'] = 'big2.avi';
-  //   header.addAll(headers);
-  //   //add headers
-  //   request.headers.addAll(header);
-  //
-  //   //adding params
-  //   request.fields['loginId'] = '12';
-  //   request.fields['firstName'] = 'abc';
-  //   // request.fields['lastName'] = 'efg';
-  //
-  //   try {
-  //     // send
-  //     var response = await request.send();
-  //
-  //     print(response.statusCode);
-  //     if (response.statusCode ~/ 100 != 2) {
-  //       response.stream.transform(utf8.decoder).listen((value) {
-  //         onError(value);
-  //       });
-  //     } else {
-  //       // listen for response
-  //       response.stream.transform(utf8.decoder).listen((value) {
-  //         onSuccess(value);
-  //       });
-  //     }
-  //
-  //   } catch (e) {
-  //     onError(e.toString());
-  //   }
-  // }
-
-  static Future<void> uploadImage({
+  static Future<void> _uploadImage({
     required File file,
     required Function(String) onSuccess,
     required Function(String) onError,
@@ -453,7 +439,7 @@ class UploadTask {
     Map<String, String> headers = const {},
     OnUploadProgressCallback? onProgress,
   }) async {
-    return fileUploadMultipart(
+    return _fileUploadMultipart(
         onSuccess: onSuccess,
         onError: onError,
         file: file,
@@ -464,7 +450,7 @@ class UploadTask {
             'image', path.extension(file.path).replaceRange(0, 1, '')));
   }
 
-  static Future<void> uploadDoc({
+  static Future<void> _uploadDoc({
     required File file,
     required Function(String) onSuccess,
     required Function(String) onError,
@@ -472,7 +458,7 @@ class UploadTask {
     Map<String, String> headers = const {},
     OnUploadProgressCallback? onProgress,
   }) async {
-    return fileUploadMultipart(
+    return _fileUploadMultipart(
         file: file,
         onError: onError,
         destination: destination,
@@ -493,6 +479,41 @@ class UploadTask {
     return httpClient;
   }
 
+  @override
+  Future<void> run({required CompletedTaskCallback onSuccess, required CompletedTaskCallback onError, TaskProgressCallback? onProgress}) async {
+    await _streamUpload(
+        onSuccess: onSuccess,
+        onError: onError,
+        onUploadProgress: onProgress,
+        headers: headers,
+        start: start);
+  }
+
+
+  @override
+  void cancel() async {
+    //await _subscription.cancel();
+    _isPaused = true;
+    request.abort();
+    _uploadedByte = 0;
+  }
+
+  @override
+  Future<void> pause() async {
+    _isPaused = true;
+    request.abort();
+    //await Future.delayed(Duration(seconds: 1));
+    //await _subscription.cancel();
+  }
+
+  @override
+  Future<void> resume({required CompletedTaskCallback onSuccess, required CompletedTaskCallback onError, TaskProgressCallback? onProgress}) async {
+    start = _uploadedByte;
+    _isPaused = false;
+    headers[gResuming] = _uploadedByte > 0 ? 'true' : null;
+    await run(onSuccess: onSuccess, onError: onError, onProgress: onProgress);
+  }
+
 
 // MediaType _mediaType(File file) {
 //   return MediaType(
@@ -507,6 +528,8 @@ abstract class Task {
 
   late final String url;
   late int start;
+  late int fileSize;
+  late final File file;
   late StreamSubscription<List<int>> _subscription;
   late HttpClientRequest request;
   late final BadCertificateCallback badCertificateCallback;
@@ -527,7 +550,7 @@ abstract class Task {
     return httpClient;
   }
 
-  Future run({
+  Future<void> run({
     required CompletedTaskCallback onSuccess,
     required CompletedTaskCallback onError,
     TaskProgressCallback? onProgress
@@ -535,9 +558,9 @@ abstract class Task {
     runOnce = true;
   }
 
-  void pause();
+  Future<void> pause();
 
-  void resume({
+  Future<void> resume({
     required CompletedTaskCallback onSuccess,
     required CompletedTaskCallback onError,
     TaskProgressCallback? onProgress
