@@ -272,7 +272,7 @@ void dudExample() async {
           }
         }
       },
-      onSuccess: (url) {
+      onSuccess: (String url) {
         print(url);
       },
       onError: (e) {

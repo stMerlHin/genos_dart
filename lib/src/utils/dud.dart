@@ -11,9 +11,9 @@ import '../../genos_dart.dart';
 typedef OnDownloadProgressCallback = void Function(int receivedBytes,
     int totalBytes);
 
-typedef OnUploadProgressCallback = void Function(int percent);
-typedef TaskProgressCallback = void Function(int percent);
-typedef CompletedTaskCallback = void Function(dynamic);
+typedef OnUploadProgressCallback = void Function(int);
+typedef TaskProgressCallback = void Function(int);
+typedef CompletedTaskCallback = void Function(String);
 
 
 class DownloadTask extends Task {
