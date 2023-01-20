@@ -201,45 +201,36 @@ void main() async {
 }
 
 void dudExample() async {
-  // DownloadTask d = DownloadTask.create(
-  //     url: 'http://localhost/simple/download',
-  //     savePath: 'photo.mp4',
-  //     trustBadCertificate: true,
-  //     headers: {
-  //       'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
-  //     }
-  // );
+  DownloadTask d = DownloadTask.resumeFromFile(
+      url: 'http://localhost/download/data.mp4',
+      filePath: 'data.mp4',
+      trustBadCertificate: true,
+      headers: {
+        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
+      }
+  );
+
+  await d.run(
+      onProgress: (pr) async {
+        // if(pr == 50) {
+        //   await d.pause();
+        //   print(d.isRunning);
+        //   print('paused ${d.downloadedByte}');
+        // }
+        print('$pr% ');
+        // if(pr >= 50) {
+        //   print('pausing');
+        //   d.pause();
+        // }
+      },
+      onSuccess: (str) {
+        print(str);
+      },
+      onError: (str) {
+        print(str);
+      });
   //
-  // DownloadTask d2 = DownloadTask.resumeFromFile(
-  //     url: 'http://localhost/simple/download',
-  //     filePath: 'photo.mp4',
-  //     trustBadCertificate: true,
-  //     headers: {
-  //       'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
-  //     }
-  // );
-  //
-  // await d.run(
-  //     onProgress: (pr) async {
-  //       // if(pr == 50) {
-  //       //   await d.pause();
-  //       //   print(d.isRunning);
-  //       //   print('paused ${d.downloadedByte}');
-  //       // }
-  //       print('$pr% ${d.isRunning}');
-  //       if(pr >= 50) {
-  //         print('pausing');
-  //         d.pause();
-  //       }
-  //     },
-  //     onSuccess: (str) {
-  //       print(str);
-  //     },
-  //     onError: (str) {
-  //       print(str);
-  //     });
-  //
-  // Timer(Duration(seconds: 10), () {
+  // Timer(Duration(seconds: 5), () {
   //   print('RESUMING');
   //   d.resume(onProgress: (pr) async {
   //     print('$pr% ${d.isRunning}');
@@ -251,46 +242,46 @@ void dudExample() async {
   //         print(str);
   //       });
   // });
-
-  var up = UploadTask.create(
-      file: File('big2.mp4'),
-      url: 'http://localhost/upload/1/mediathec',
-      headers: {
-        gFileName: "average.mp4",
-        gAppSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-      });
-
-  await up.run(
-      onProgress: (pr) {
-        print(pr);
-        if(pr >= 50) {
-          print('pausing');
-          try {
-            up.cancel();
-          } catch(e) {
-            print('FRF $e');
-          }
-        }
-      },
-      onSuccess: (String url) {
-        print(url);
-      },
-      onError: (e) {
-        print(e);
-      }
-  );
-  Timer(Duration(seconds: 5), () {
-    print('RESUMING');
-    up.resume(
-        onProgress: (pr) {
-          print('$pr%');
-        },
-        onSuccess: (str) {
-          print('success');
-          print(str);
-        }, onError: (str) {
-      print(str);
-    });
-  });
-  print('one moment');
+  //
+  // var up = UploadTask.create(
+  //     file: File('big2.mp4'),
+  //     url: 'http://localhost/upload/1/mediathec',
+  //     headers: {
+  //       gFileName: "average.mp4",
+  //       gAppSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+  //     });
+  //
+  // await up.run(
+  //     onProgress: (pr) {
+  //       print(pr);
+  //       if(pr >= 50) {
+  //         print('pausing');
+  //         try {
+  //           up.cancel();
+  //         } catch(e) {
+  //           print('FRF $e');
+  //         }
+  //       }
+  //     },
+  //     onSuccess: (String url) {
+  //       print(url);
+  //     },
+  //     onError: (e) {
+  //       print(e);
+  //     }
+  // );
+  // Timer(Duration(seconds: 5), () {
+  //   print('RESUMING');
+  //   up.resume(
+  //       onProgress: (pr) {
+  //         print('$pr%');
+  //       },
+  //       onSuccess: (str) {
+  //         print('success');
+  //         print(str);
+  //       }, onError: (str) {
+  //     print(str);
+  //   });
+  // });
+  // print('one moment');
 }

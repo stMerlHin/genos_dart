@@ -113,9 +113,8 @@ class DownloadTask extends Task {
 
     try {
       request = await httpClient.getUrl(Uri.parse(url));
-      request.headers..add(
-          HttpHeaders.contentTypeHeader, "application/octet-stream")..add(
-          HttpHeaders.rangeHeader, '$start');
+      request.headers.add(
+          HttpHeaders.rangeHeader, 'bytes=$start-');
 
       ///add user specific headers data
       headers.forEach((key, value) {
