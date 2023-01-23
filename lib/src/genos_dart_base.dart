@@ -208,6 +208,36 @@ class Genos {
     }
   }
 
+
+  static Future<void> deleteObject({
+    required String path,
+    required Function(String) onSuccess,
+    required Function(String) onError,
+    required Map<String, dynamic> data,
+    Map<String, String> headers = const {},
+    bool secure = true,
+  }) async {
+
+    final url = Uri.parse('${secure ? Genos.baseUrl :
+    Genos.unsecureBaseUrl}$path');
+
+    try {
+      final response = await http.delete(
+          url,
+          headers: headers,
+          body: json.encode(data)
+      );
+
+      if (response.statusCode == 200) {
+        onSuccess(response.body.toString());
+      } else {
+        onError(response.body.toString());
+      }
+    } catch (e)  {
+      onError(e.toString());
+    }
+  }
+
 }
 
 ///  DataListener tableListener = TableListener(table: 'student');
