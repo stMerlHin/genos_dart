@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
-import 'package:genos_dart/src/model/fluent_object.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -10,6 +9,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 class Genos {
   static String _gHost = gLocalhost;
   static String _gPort = gPort;
+  static late int _tour;
   static late String _connectionId;
   static String _unsecureGPort = '80';
   static String _privateDirectory = '';
@@ -48,12 +48,14 @@ class Genos {
     required String appPrivateDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
+    int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
 
       _connectionId = Uuid().v1();
+      _tour = tour;
       _privateDirectory = appPrivateDirectory;
       _encryptionKey = encryptionKey;
       _appSignature = appSignature;
@@ -102,9 +104,22 @@ class Genos {
   }
 
   static Genos get instance => _instance;
+  static int get tour => _tour;
   static String get encryptionKey => _encryptionKey;
-  static String get appSignature => _appSignature;
-  static String get appWsSignature => _appWsSignature;
+  static String get appSignature {
+   String key = Auth.encodeBase64String(_appSignature);
+   for(int i = 1; i < _tour; i++) {
+     key = Auth.encodeBase64String(key);
+   }
+   return key;
+  }
+  static String get appWsSignature {
+    String key = Auth.encodeBase64String(_appWsSignature);
+    for(int i = 1; i < _tour; i++) {
+      key = Auth.encodeBase64String(key);
+    }
+    return key;
+  }
   static String get appPrivateDirectory => _privateDirectory;
   static String get connectionId => _connectionId;
   static String get baseUrl => 'https://$_gHost:$_gPort/';

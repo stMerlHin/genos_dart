@@ -9,7 +9,17 @@ import 'package:genos_dart/src/utils/dud.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  dudExample();
+  //dudExample();
+
+  String en = Auth.encodeBase64String("CEci est le string");
+  print(en);
+  en = Auth.encodeBase64String(en);
+  print(en);
+  en = Auth.encodeBase64String(en);
+  print(en);
+  en = Auth.encodeBase64String(en);
+  print(en);
+  print(Auth.decodeBase64String(en));
 
 
   // await Genos.instance.initialize(

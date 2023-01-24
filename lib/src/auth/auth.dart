@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:genos_dart/src/utils/utils.dart';
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../genos_dart_base.dart';
@@ -29,6 +31,36 @@ class Auth {
       return _instance;
     }
     return _instance;
+  }
+
+  static String decodeBase64String(String string) {
+    return utf8.decode(base64.decode(string));
+  }
+
+  static String encodeBase64String(String string) {
+    return base64.encode(utf8.encode(string));
+  }
+
+
+  static String _hashPassword({
+    required String password,
+    bool useSalt = false
+  }) {
+    final salt = useSalt ? _generateRandomSalt() : '';
+    final saltedPassword = salt + password;
+    final bytes = utf8.encode(saltedPassword);
+    final hash = sha256.convert(bytes);
+    // store the salt with the hash separated by a period
+    return '$salt.$hash';
+  }
+
+
+  static String _generateRandomSalt() {
+    return Uuid()
+        .v1()
+        .substring(0, 8)
+        .replaceAll('-', '')
+        .replaceAll('_', '');
   }
 
   static void _getAuthenticationData() {
