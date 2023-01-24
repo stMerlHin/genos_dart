@@ -238,9 +238,9 @@ class Genos {
     try {
       final response = await http.delete(
           url,
-          headers: headers..addAll({
+          headers: {
             gAppSignature: Genos.appSignature
-          }),
+          }..addAll(headers),
           body: ""
       );
 
