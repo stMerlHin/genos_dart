@@ -226,9 +226,8 @@ class Genos {
 
   static Future<void> deleteObject({
     required String path,
-    required Function(String) onSuccess,
+    required Function() onSuccess,
     required Function(String) onError,
-    required Map<String, dynamic> data,
     Map<String, String> headers = const {},
     bool secure = true,
   }) async {
@@ -239,12 +238,14 @@ class Genos {
     try {
       final response = await http.delete(
           url,
-          headers: headers,
-          body: json.encode(data)
+          headers: headers..addAll({
+            gAppSignature: Genos.appSignature
+          }),
+          body: ""
       );
 
       if (response.statusCode == 200) {
-        onSuccess(response.body.toString());
+        onSuccess();
       } else {
         onError(response.body.toString());
       }
