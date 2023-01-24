@@ -7,11 +7,16 @@ class Result {
   final List<Map<String, dynamic>> data;
   final bool errorHappened;
   final RequestError? error;
+  static DateTime? _serverDateTime;
 
   Result({this.data = const [], this.errorHappened = false, this.error});
 
   static Result fromJson(String json) {
     var map = jsonDecode(json);
+
+    //get the server dateTime
+    Result._serverDateTime = DateTime.parse(map[gDateTime]);
+
     Map<String, dynamic>? e = map[gError];
     List<Map<String, dynamic>> l = [];
     bool err = map[gErrorHappened];
@@ -35,6 +40,8 @@ class Result {
       gError: error?.toMap()
     });
   }
+
+  static DateTime? get serverDateTime => _serverDateTime;
 }
 
 class AuthResult {

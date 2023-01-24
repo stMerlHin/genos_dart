@@ -5,6 +5,8 @@
 const String gLocalhost = 'localhost';
 const String gPort = '8080';
 const String gConnectionId = 'connection_id';
+const String gEvent = 'event';
+const String gDateTime = 'date_time';
 const String gTable = 'table';
 const String gValues = 'values';
 const String gDateTimeEnable = 'date_time_enabled';
@@ -27,7 +29,7 @@ const String gNewUserCountryCode = 'g_new_user_country_code';
 const String gType = 'type';
 const String gData = 'data';
 const String gPointId = 'point_id';
-const String gBooks = 'books';
+const String gMediathec = 'mediathec';
 const String gImage = 'image';
 const String gFileName = 'file_name';
 const String gPartialData = 'partial_data';

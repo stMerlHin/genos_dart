@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
+import 'package:genos_dart/src/model/event_sink.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -180,12 +181,15 @@ class Genos {
     '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
   }
 
-  static String getPointBooksUploadUrl({
+  static String getPointMediathecUploadUrl({
     required String pointId,
     bool secured = true}) {
-    return secured ? '$baseUrl' 'upload/$pointId/$gImage/' :
-    '$unsecureBaseUrl' 'upload/$pointId/$gBooks/';
+    return secured ? '$baseUrl' 'upload/$pointId/$gMediathec/' :
+    '$unsecureBaseUrl' 'upload/$pointId/$gMediathec/';
   }
+  
+  static DateTime get genosDateTime => DataListener
+      .lastKnownSeverDate ?? Result.serverDateTime ?? DateTime.now();
 
   ///The host which runs the http server
   String get host => _gHost;
@@ -273,47 +277,62 @@ class DataListener {
   String table;
   String? tag;
   late int _reconnectionDelay;
+  
+  static DateTime? _lastKnownServerDate;
 
   DataListener({required this.table, this.tag});
+  
+  static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(void Function(ChangeType) onChanged, {int reconnectionDelay = 1000,
     bool secure = true,
     bool refresh = false,
+    bool reflexive = false,
     void Function(String)? onError,
     void Function()? onDispose,
   }) {
     _reconnectionDelay = reconnectionDelay;
-    _create(onChanged, secure, onError, onDispose, refresh);
+    _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
 
   void _create(void Function(ChangeType) onChanged, bool secure,
       void Function(String)? onError,
-      void Function()? onDispose, [bool refresh = false]) {
+      void Function()? onDispose, bool refresh, bool reflexive) {
     _webSocket = createChannel('db/listen', secure);
     _webSocket.sink.add(_toJson());
     _webSocket.stream.listen((event) {
+      EventSink eventSink = EventSink.fromJson(event);
+      //We store the server datetime
+      _lastKnownServerDate = eventSink.dateTime;
       //The connection have be close by the server due to duplicate listening
-      if(event == 'close') {
+      if(eventSink.event == 'close') {
         dispose();
         onDispose?.call();
         //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
         //do something once the connection is reestablished
-      } else if(event == 'registered') {
+      } else if(eventSink.event == 'registered') {
         if(refresh) {
           onChanged(ChangeType.none);
         }
-      } else {
         //Change happens on the database
-        onChanged(ChangeType.fromString(event));
+      } else {
+        //The change is not made by this client so we notify him
+        if(eventSink.connectionId != Genos.connectionId) {
+          onChanged(ChangeType.fromString(eventSink.event));
+          //the change is made by this client. We notify him because the
+          //change subscription is reflexive
+        } else if(reflexive){
+          onChanged(ChangeType.fromString(eventSink.event));
+        }
       }
     }, onError: (e) {
       onError?.call(e.toString());
     }).onDone(() {
       if (!_closeByClient) {
         Timer(Duration(milliseconds: _reconnectionDelay), () {
-          _create(onChanged, secure, onError, onDispose, true);
+          _create(onChanged, secure, onError, onDispose, true, reflexive);
         });
       }
     });
@@ -336,7 +355,6 @@ class DataListener {
 }
 
 enum ChangeType {
-  select,
   insert,
   update,
   delete,
@@ -345,8 +363,6 @@ enum ChangeType {
   
   static ChangeType fromString(String value) {
     switch(value) {
-      case 'select':
-        return ChangeType.select;
       case 'insert':
         return ChangeType.insert;
       case 'update':
