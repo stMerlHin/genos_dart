@@ -260,6 +260,15 @@ class Genos {
 
 }
 
+///Turn a String return by genos uploadTask to usable link
+///[source] is the string to transform
+///[secure] tells if the link should use https protocol or http.
+///     Default to true so https is used
+String linkify(String source, [bool secure = true]) {
+  return '${secure ? Genos.baseUrl :
+  Genos.unsecureBaseUrl}$source';
+}
+
 ///  DataListener tableListener = TableListener(table: 'student');
 ///     tableListener.listen(() {
 ///       print('Change HAPPENED ON TABLE student');
