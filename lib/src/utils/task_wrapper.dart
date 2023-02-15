@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 import '../../genos_dart.dart';
 
-abstract class TaskWrapper with TaskBody {
+class TaskWrapper with TaskBody, TaskState {
   String taskId;
   late final Task task;
 
