@@ -42,8 +42,8 @@ abstract class TaskWrapper with TaskBody {
 }
 
 abstract class TaskListener {
-  void onError(e);
-  void onSuccess(s);
+  void onError([e]);
+  void onSuccess([s]);
   void onProgress(int percent);
   void onPause() {}
   void onResume() {}
@@ -89,14 +89,14 @@ mixin TaskBody implements TaskRunner {
   }
 
   @protected
-  Future<void> notifySuccessListeners(e) async {
+  Future<void> notifySuccessListeners([e]) async {
     for (var element in listeners) {
       element.onSuccess(e);
     }
   }
 
   @protected
-  Future<void> notifyErrorListeners(e) async {
+  Future<void> notifyErrorListeners([e]) async {
     for (var element in listeners) {
       element.onError(e);
     }
