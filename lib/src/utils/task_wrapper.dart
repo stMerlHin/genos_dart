@@ -68,7 +68,7 @@ mixin TaskState {
   bool get isCompleted => completed;
 }
 
-abstract class TaskRunner with TaskState {
+abstract class TaskRunner {
 
   Future<void> run();
 
@@ -90,7 +90,6 @@ mixin TaskBody implements TaskRunner {
 
   @protected
   Future<void> notifySuccessListeners(e) async {
-    completed = true;
     for (var element in listeners) {
       element.onSuccess(e);
     }
