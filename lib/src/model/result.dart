@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
@@ -34,11 +33,8 @@ class Result {
   }
 
   String toJson() {
-    return jsonEncode({
-      gData: data,
-      gErrorHappened: errorHappened,
-      gError: error?.toMap()
-    });
+    return jsonEncode(
+        {gData: data, gErrorHappened: errorHappened, gError: error?.toMap()});
   }
 
   static DateTime? get serverDateTime => _serverDateTime;
@@ -81,7 +77,6 @@ class AuthResult {
         errorMessage: map[gError]);
   }
 
-
   static AuthResult fromMap(Map<String, dynamic> map) {
     return AuthResult(
         data: map[gData],
@@ -89,13 +84,8 @@ class AuthResult {
         errorMessage: map[gError]);
   }
 
-
   String toJson() {
-    return jsonEncode({
-      gData: data,
-      gErrorHappened: errorHappened,
-      gError: errorMessage
-    });
+    return jsonEncode(
+        {gData: data, gErrorHappened: errorHappened, gError: errorMessage});
   }
-
 }

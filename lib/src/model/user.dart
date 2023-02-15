@@ -2,9 +2,7 @@ import 'dart:convert';
 
 import '../utils/constants.dart';
 
-
 class User {
-
   final String? email;
   final String? countryCode;
   final int? phoneNumber;
@@ -67,7 +65,8 @@ class User {
     );
   }
 
-  factory User.fromAnother(User user, {
+  factory User.fromAnother(
+    User user, {
     AuthenticationMode? authMode,
     String? uid,
     String? email,
@@ -79,7 +78,7 @@ class User {
       email: email ?? user.email,
       countryCode: countryCode ?? user.countryCode,
       phoneNumber: phoneNumber ?? user.phoneNumber,
-      appLocalization: user.appLocalization ,
+      appLocalization: user.appLocalization,
       uid: uid ?? user.uid,
       password: password ?? user.password,
       authMode: authMode ?? user.authMode,
@@ -97,7 +96,6 @@ class User {
     );
   }
 
-
   @override
   String toString() {
     return toMap().toString();
@@ -111,7 +109,7 @@ enum AuthenticationMode {
 
   @override
   String toString() {
-    switch(this) {
+    switch (this) {
       case AuthenticationMode.email:
         return 'email';
       case AuthenticationMode.phoneNumber:
@@ -122,7 +120,7 @@ enum AuthenticationMode {
   }
 
   static AuthenticationMode parse(String? value) {
-    switch(value) {
+    switch (value) {
       case 'email':
         return AuthenticationMode.email;
       case 'phoneNumber':

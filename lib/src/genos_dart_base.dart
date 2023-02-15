@@ -54,7 +54,6 @@ class Genos {
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
-
       _connectionId = Uuid().v1();
       _tour = tour;
       _privateDirectory = appPrivateDirectory;
@@ -76,13 +75,14 @@ class Genos {
   }
 
   void _onUserLoggedOut(bool value) {
-    if(!value) {
+    if (!value) {
       _onLoginOut?.call();
     }
   }
 
   ///Change the configurations relative to remote server
-  Future changeConfig({String? host, String? port, String? unsecurePort}) async {
+  Future changeConfig(
+      {String? host, String? port, String? unsecurePort}) async {
     bool configChanged = false;
     if (host != null && host != _gHost) {
       _gHost = host;
@@ -97,10 +97,8 @@ class Genos {
       configChanged = true;
     }
     if (configChanged) {
-      _onConfigChanged({
-        'host': _gHost,
-        'port': _gPort,
-        'unsecurePort': _unsecureGPort });
+      _onConfigChanged(
+          {'host': _gHost, 'port': _gPort, 'unsecurePort': _unsecureGPort});
     }
   }
 
@@ -108,19 +106,21 @@ class Genos {
   static int get tour => _tour;
   static String get encryptionKey => _encryptionKey;
   static String get appSignature {
-   String key = Auth.encodeBase64String(_appSignature);
-   for(int i = 1; i < _tour; i++) {
-     key = Auth.encodeBase64String(key);
-   }
-   return key;
-  }
-  static String get appWsSignature {
-    String key = Auth.encodeBase64String(_appWsSignature);
-    for(int i = 1; i < _tour; i++) {
+    String key = Auth.encodeBase64String(_appSignature);
+    for (int i = 1; i < _tour; i++) {
       key = Auth.encodeBase64String(key);
     }
     return key;
   }
+
+  static String get appWsSignature {
+    String key = Auth.encodeBase64String(_appWsSignature);
+    for (int i = 1; i < _tour; i++) {
+      key = Auth.encodeBase64String(key);
+    }
+    return key;
+  }
+
   static String get appPrivateDirectory => _privateDirectory;
   static String get connectionId => _connectionId;
   static String get baseUrl => 'https://$_gHost:$_gPort/';
@@ -128,68 +128,75 @@ class Genos {
   static String get wsBaseUrl => 'wss://$_gHost:$_gPort/ws/';
   static String get unSecureWsBaseUrl => 'ws://$_gHost:$_unsecureGPort/ws/';
   static String getEmailSigningUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/email/signing' :
-    '$unsecureBaseUrl' 'auth/email/signing';
+    return secured
+        ? '$baseUrl' 'auth/email/signing'
+        : '$unsecureBaseUrl' 'auth/email/signing';
   }
 
   static String get qrLoginRoute => 'auth/qr_code/listen';
 
   static String getEmailLoginUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/email/login' :
-    '$unsecureBaseUrl' 'auth/email/login';
+    return secured
+        ? '$baseUrl' 'auth/email/login'
+        : '$unsecureBaseUrl' 'auth/email/login';
   }
 
   static String getEmailChangeUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/email/change' :
-    '$unsecureBaseUrl' 'auth/email/change';
+    return secured
+        ? '$baseUrl' 'auth/email/change'
+        : '$unsecureBaseUrl' 'auth/email/change';
   }
 
   static String getQRConfirmationUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/qr_code/confirmation' :
-    '$unsecureBaseUrl' 'auth/qr_code/confirmation';
+    return secured
+        ? '$baseUrl' 'auth/qr_code/confirmation'
+        : '$unsecureBaseUrl' 'auth/qr_code/confirmation';
   }
 
   static String getPasswordRecoveryUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/email/password/recovering' :
-    '$unsecureBaseUrl' 'auth/email/password/recovering';
+    return secured
+        ? '$baseUrl' 'auth/email/password/recovering'
+        : '$unsecureBaseUrl' 'auth/email/password/recovering';
   }
 
   static String getChangePasswordUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/email/password/change' :
-    '$unsecureBaseUrl' 'auth/email/password/change';
+    return secured
+        ? '$baseUrl' 'auth/email/password/change'
+        : '$unsecureBaseUrl' 'auth/email/password/change';
   }
 
   static String getPhoneAuthUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/phone' :
-    '$unsecureBaseUrl' 'auth/phone';
+    return secured ? '$baseUrl' 'auth/phone' : '$unsecureBaseUrl' 'auth/phone';
   }
 
   static String getPhoneChangeUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'auth/phone/change' :
-    '$unsecureBaseUrl' 'auth/phone/change';
+    return secured
+        ? '$baseUrl' 'auth/phone/change'
+        : '$unsecureBaseUrl' 'auth/phone/change';
   }
 
   static String getSubscriptionUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'subscribe' :
-    '$unsecureBaseUrl' 'subscribe';
+    return secured ? '$baseUrl' 'subscribe' : '$unsecureBaseUrl' 'subscribe';
   }
 
-  static String getPointImageUploadUrl({
-    required String pointId,
-    bool secured = true}) {
-    return secured ? '$baseUrl' 'upload/$pointId/$gImage/' :
-    '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
+  static String getPointImageUploadUrl(
+      {required String pointId, bool secured = true}) {
+    return secured
+        ? '$baseUrl' 'upload/$pointId/$gImage/'
+        : '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
   }
 
-  static String getPointMediathecUploadUrl({
-    required String pointId,
-    bool secured = true}) {
-    return secured ? '$baseUrl' 'upload/$pointId/$gMediathec/' :
-    '$unsecureBaseUrl' 'upload/$pointId/$gMediathec/';
+  static String getPointMediathecUploadUrl(
+      {required String pointId, bool secured = true}) {
+    return secured
+        ? '$baseUrl' 'upload/$pointId/$gMediathec/'
+        : '$unsecureBaseUrl' 'upload/$pointId/$gMediathec/';
   }
-  
-  static DateTime get genosDateTime => DataListener
-      .lastKnownSeverDate ?? Result.serverDateTime ?? DateTime.now();
+
+  static DateTime get genosDateTime =>
+      DataListener.lastKnownSeverDate ??
+      Result.serverDateTime ??
+      DateTime.now();
 
   ///The host which runs the http server
   String get host => _gHost;
@@ -203,30 +210,26 @@ class Genos {
     required Map<String, dynamic> data,
     bool secure = true,
   }) async {
-
-    final url = Uri.parse('${secure ? Genos.baseUrl :
-    Genos.unsecureBaseUrl}subscribe');
+    final url =
+        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
 
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
             //'origin': 'http://localhost'
           },
-          body: json.encode(data)
-      );
+          body: json.encode(data));
 
       if (response.statusCode == 200) {
         onSuccess(response.body.toString());
       } else {
         onError(response.body.toString());
       }
-    } catch (e)  {
+    } catch (e) {
       onError(e.toString());
     }
   }
-
 
   static Future<void> deleteObject({
     required String path,
@@ -235,29 +238,23 @@ class Genos {
     Map<String, String> headers = const {},
     bool secure = true,
   }) async {
-
-    final url = Uri.parse('${secure ? Genos.baseUrl :
-    Genos.unsecureBaseUrl}$path');
+    final url =
+        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
 
     try {
-      final response = await http.delete(
-          url,
-          headers: {
-            gAppSignature: Genos.appSignature
-          }..addAll(headers),
-          body: ""
-      );
+      final response = await http.delete(url,
+          headers: {gAppSignature: Genos.appSignature}..addAll(headers),
+          body: "");
 
       if (response.statusCode == 200) {
         onSuccess();
       } else {
         onError(response.body.toString());
       }
-    } catch (e)  {
+    } catch (e) {
       onError(e.toString());
     }
   }
-
 }
 
 ///Turn a String return by genos uploadTask to usable link
@@ -265,8 +262,7 @@ class Genos {
 ///[secure] tells if the link should use https protocol or http.
 ///     Default to true so https is used
 String linkify(String source, [bool secure = true]) {
-  return '${secure ? Genos.baseUrl :
-  Genos.unsecureBaseUrl}$source';
+  return '${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$source';
 }
 
 ///  DataListener tableListener = TableListener(table: 'student');
@@ -286,14 +282,16 @@ class DataListener {
   String table;
   String? tag;
   late int _reconnectionDelay;
-  
+
   static DateTime? _lastKnownServerDate;
 
   DataListener({required this.table, this.tag});
-  
+
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
-  void listen(void Function(ChangeType) onChanged, {int reconnectionDelay = 1000,
+  void listen(
+    void Function(ChangeType) onChanged, {
+    int reconnectionDelay = 1000,
     bool secure = true,
     bool refresh = false,
     bool reflexive = false,
@@ -304,9 +302,13 @@ class DataListener {
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
 
-  void _create(void Function(ChangeType) onChanged, bool secure,
+  void _create(
+      void Function(ChangeType) onChanged,
+      bool secure,
       void Function(String)? onError,
-      void Function()? onDispose, bool refresh, bool reflexive) {
+      void Function()? onDispose,
+      bool refresh,
+      bool reflexive) {
     _webSocket = createChannel('db/listen', secure);
     _webSocket.sink.add(_toJson());
     _webSocket.stream.listen((event) {
@@ -314,25 +316,25 @@ class DataListener {
       //We store the server datetime
       _lastKnownServerDate = eventSink.dateTime;
       //The connection have be close by the server due to duplicate listening
-      if(eventSink.event == 'close') {
+      if (eventSink.event == 'close') {
         dispose();
         onDispose?.call();
         //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
         //do something once the connection is reestablished
-      } else if(eventSink.event == 'registered') {
-        if(refresh) {
+      } else if (eventSink.event == 'registered') {
+        if (refresh) {
           onChanged(ChangeType.none);
         }
         //Change happens on the database
       } else {
         //The change is not made by this client so we notify him
-        if(eventSink.connectionId != Genos.connectionId) {
+        if (eventSink.connectionId != Genos.connectionId) {
           onChanged(ChangeType.fromString(eventSink.event));
           //the change is made by this client. We notify him because the
           //change subscription is reflexive
-        } else if(reflexive){
+        } else if (reflexive) {
           onChanged(ChangeType.fromString(eventSink.event));
         }
       }
@@ -369,9 +371,9 @@ enum ChangeType {
   delete,
   none,
   unknown;
-  
+
   static ChangeType fromString(String value) {
-    switch(value) {
+    switch (value) {
       case 'insert':
         return ChangeType.insert;
       case 'update':
@@ -387,8 +389,8 @@ enum ChangeType {
 }
 
 WebSocketChannel createChannel(String url, [bool secure = true]) {
-  return WebSocketChannel.connect(Uri.parse('${secure ? Genos.wsBaseUrl :
-  Genos.unSecureWsBaseUrl}' '$url'));
+  return WebSocketChannel.connect(Uri.parse(
+      '${secure ? Genos.wsBaseUrl : Genos.unSecureWsBaseUrl}' '$url'));
 }
 
 // an example of use.
@@ -450,10 +452,8 @@ class GDirectRequest {
         values: values);
   }
 
-  factory GDirectRequest.fluentInsert({
-    required String table,
-    required FluentObject object
-  }) {
+  factory GDirectRequest.fluentInsert(
+      {required String table, required FluentObject object}) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
         sql: "INSERT INTO $table "
@@ -464,10 +464,8 @@ class GDirectRequest {
         values: [...object.toFluentMap().values]);
   }
 
-  factory GDirectRequest.insertMap({
-    required String table,
-    required Map<String, dynamic> map
-  }) {
+  factory GDirectRequest.insertMap(
+      {required String table, required Map<String, dynamic> map}) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
         sql: "INSERT INTO $table "
@@ -547,19 +545,16 @@ class GDirectRequest {
     required Function(RequestError) onError,
     bool secure = true,
   }) async {
-
-    final url = Uri.parse('${secure ? Genos.baseUrl :
-    Genos.unsecureBaseUrl}request');
+    final url =
+        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
 
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
             //'origin': 'http://localhost'
           },
-          body: _toJson()
-      );
+          body: _toJson());
 
       if (response.statusCode == 200) {
         Result result = Result.fromJson(response.body);
@@ -569,14 +564,9 @@ class GDirectRequest {
           onSuccess(result);
         }
       } else {
-        onError(
-            RequestError(
-                message: response.body.toString(),
-                code: 200
-            )
-        );
+        onError(RequestError(message: response.body.toString(), code: 200));
       }
-    } catch (e)  {
+    } catch (e) {
       onError(RequestError(message: e.toString(), code: 400));
     }
   }
@@ -610,14 +600,13 @@ enum GRequestType {
 }
 
 extension MapExt on Map<String, dynamic> {
-
   String get valuesAsQuestionMarks {
     String r = '';
-    if(length > 0) {
+    if (length > 0) {
       r = '?';
       int i = 0;
       forEach((key, value) {
-        if(i != 0) {
+        if (i != 0) {
           r = '$r, ?';
         } else {
           i++;
@@ -631,7 +620,7 @@ extension MapExt on Map<String, dynamic> {
     String str = '';
     List<String> l = [];
     l.addAll(keys);
-    if(l.isNotEmpty) {
+    if (l.isNotEmpty) {
       str = '${l[0]} = ?';
       for (int i = 1; i < l.length; i++) {
         str = '$str, \n${l[i]} = ?';
@@ -640,12 +629,11 @@ extension MapExt on Map<String, dynamic> {
     return '$str ';
   }
 
-
   String get keyWithComma {
     String str = '';
     List<String> l = [];
     l.addAll(keys);
-    if(l.isNotEmpty) {
+    if (l.isNotEmpty) {
       str = l[0];
       for (int i = 1; i < l.length; i++) {
         str = '$str, \n${l[i]}';
@@ -655,7 +643,7 @@ extension MapExt on Map<String, dynamic> {
   }
 }
 
-
-const String gInterruptionError = 'Connection closed before full header was received';
+const String gInterruptionError =
+    'Connection closed before full header was received';
 const String unavailableHostError = 'Connection refused';
 const String hostLookUpError = 'Failed host lookup';

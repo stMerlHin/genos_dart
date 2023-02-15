@@ -18,8 +18,8 @@ void main() {
           appPrivateDirectory: '.',
           onInitialization: (_) async {
             await GDirectRequest.select(
-              sql: '',)
-                .exec(
+              sql: '',
+            ).exec(
                 secure: false,
                 onSuccess: (_) {
                   print('h');
@@ -28,7 +28,6 @@ void main() {
                   expect(err, 'Connection refused');
                 });
           });
-
     });
 
     test('Generate uid', () async {

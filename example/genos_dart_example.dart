@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -20,7 +18,6 @@ void main() async {
   en = Auth.encodeBase64String(en);
   print(en);
   print(Auth.decodeBase64String(en));
-
 
   // await Genos.instance.initialize(
   //     appSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
@@ -207,7 +204,6 @@ void main() async {
   //     print(e);
   //   },
   // );
-
 }
 
 void dudExample() async {
@@ -215,30 +211,24 @@ void dudExample() async {
       url: 'http://localhost/download/data.mp4',
       filePath: 'data.mp4',
       trustBadCertificate: true,
-      headers: {
-        'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'
-      }
-  );
+      headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'});
 
-  await d.run(
-      onProgress: (pr) async {
-        // if(pr == 50) {
-        //   await d.pause();
-        //   print(d.isRunning);
-        //   print('paused ${d.downloadedByte}');
-        // }
-        print('$pr% ');
-        // if(pr >= 50) {
-        //   print('pausing');
-        //   d.pause();
-        // }
-      },
-      onSuccess: (str) {
-        print(str);
-      },
-      onError: (str) {
-        print(str);
-      });
+  await d.run(onProgress: (pr) async {
+    // if(pr == 50) {
+    //   await d.pause();
+    //   print(d.isRunning);
+    //   print('paused ${d.downloadedByte}');
+    // }
+    print('$pr% ');
+    // if(pr >= 50) {
+    //   print('pausing');
+    //   d.pause();
+    // }
+  }, onSuccess: (str) {
+    print(str);
+  }, onError: (str) {
+    print(str);
+  });
   //
   // Timer(Duration(seconds: 5), () {
   //   print('RESUMING');

@@ -18,10 +18,7 @@ class EventSink {
     String? connectionId,
   }) {
     return EventSink(
-        event: event,
-        dateTime: DateTime.now(),
-        connectionId: connectionId
-    );
+        event: event, dateTime: DateTime.now(), connectionId: connectionId);
   }
 
   factory EventSink.request({
@@ -29,10 +26,7 @@ class EventSink {
     required String connectionId,
   }) {
     return EventSink(
-        event: event,
-        dateTime: DateTime.now(),
-        connectionId: connectionId
-    );
+        event: event, dateTime: DateTime.now(), connectionId: connectionId);
   }
 
   factory EventSink.fromJson(String source) {
@@ -40,8 +34,7 @@ class EventSink {
     return EventSink(
         event: map[gEvent],
         dateTime: DateTime.parse(map[gDateTime]),
-        connectionId: map[gConnectionId]
-    );
+        connectionId: map[gConnectionId]);
   }
 
   Map<String, dynamic> toMap() {
@@ -55,5 +48,4 @@ class EventSink {
   String toJson() {
     return jsonEncode(toMap());
   }
-
 }
