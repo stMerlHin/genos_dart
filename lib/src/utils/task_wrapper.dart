@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 import '../../genos_dart.dart';
 
-class TaskWrapper with TaskBody, TaskState {
+class TaskWrapper with TaskBody {
   String taskId;
   late final Task task;
 
@@ -14,31 +14,73 @@ class TaskWrapper with TaskBody, TaskState {
 
   @override
   Future<void> run() async {
-    await task.run(
-        onSuccess: notifySuccessListeners,
-        onError: notifyErrorListeners,
-        onProgress: notifyProgressListeners);
+    if(isCompleted) {
+      notifyProgressListeners(100);
+      notifySuccessListeners(task.result);
+    } else if(!isRunning) {
+      _setTaskListener();
+      await task.run();
+    }
   }
 
   @override
   Future<void> resume() async {
-    await task.resume(
-        onSuccess: notifySuccessListeners,
-        onError: notifyErrorListeners,
-        onProgress: notifyProgressListeners);
+    if(isCompleted) {
+      notifyProgressListeners(100);
+      notifySuccessListeners(task.result);
+    } else if(!isRunning) {
+      _setTaskListener();
+      await task.resume();
+    }
   }
 
   @override
   Future<void> pause() async {
-    await task.pause();
-    notifyPauseListeners();
+    if(!isPaused) {
+      await task.pause();
+      notifyPauseListeners();
+    }
   }
 
   @override
   Future<void> cancel() async {
-    task.cancel();
-    notifyCancelListeners();
+    if(!isCanceled) {
+      task.cancel();
+      notifyCancelListeners();
+    }
   }
+
+  @override
+  bool get isCompleted {
+    return task.completed;
+  }
+
+  @override
+  bool get isCanceled {
+    return task.isCanceled;
+  }
+
+  @override
+  bool get isPaused {
+    return task.isPaused;
+  }
+  
+  @override
+  bool get isRunning {
+    return task.isPaused;
+  }
+  
+  @override
+  get result => task.result;
+
+  void _setTaskListener() {
+    task.setListener(
+        onSuccess: notifySuccessListeners,
+        onError: notifyErrorListeners,
+        onProgress: notifyProgressListeners
+    );
+  }
+
 }
 
 abstract class TaskListener {
@@ -49,22 +91,57 @@ abstract class TaskListener {
   void onResume() {}
 }
 
-mixin TaskState {
+abstract class TaskStateNotifier {
+  
+  bool get isPaused;
+  
+  bool get isRunning;
+  
+  bool get isCanceled;
+  
+  bool get isCompleted;
+  
+  get result;
+  
+}
+
+abstract class TaskStateHolder {
+
+  @protected
+  late bool paused;
+
+  @protected
+  late bool canceled;
+
+  @protected
+  late bool completed;
+
+}
+
+mixin TaskState implements TaskStateHolder, TaskStateNotifier {
+
+  @override
   @protected
   bool paused = true;
 
+  @override
   @protected
   bool canceled = false;
 
+  @override
   @protected
   bool completed = false;
 
+  @override
   bool get isPaused => paused && !canceled && !completed;
 
+  @override
   bool get isRunning => !paused && !canceled && !completed;
 
+  @override
   bool get isCanceled => canceled;
 
+  @override
   bool get isCompleted => completed;
 }
 
@@ -79,7 +156,7 @@ abstract class TaskRunner {
   Future<void> cancel();
 }
 
-mixin TaskBody implements TaskRunner {
+mixin TaskBody implements TaskRunner, TaskStateNotifier {
 
   @protected
   late List<TaskListener> listeners;

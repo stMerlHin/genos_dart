@@ -14,7 +14,7 @@ typedef OnDownloadProgressCallback = void Function(
 
 typedef OnUploadProgressCallback = void Function(int);
 typedef TaskProgressCallback = void Function(int);
-typedef CompletedTaskCallback = void Function(String);
+typedef CompletedTaskCallback = void Function(dynamic);
 
 class DownloadTask extends Task {
   final String savePath;
@@ -92,11 +92,7 @@ class DownloadTask extends Task {
   int get downloadedByte => _downloadedByte;
 
   @override
-  Future run({
-    required CompletedTaskCallback onSuccess,
-    required CompletedTaskCallback onError,
-    TaskProgressCallback? onProgress
-  }) async {
+  Future run() async {
     if (completed) {
       onSuccess(file.path);
     } else if (!isRunning) {
@@ -137,6 +133,7 @@ class DownloadTask extends Task {
             },
             onDone: () {
               downloadedFile.closeSync();
+              taskResult = file.path;
               completed = true;
               onSuccess(file.path);
             },
@@ -189,25 +186,24 @@ class DownloadTask extends Task {
   }
 
   @override
-  Future<void> resume(
-      {required CompletedTaskCallback onSuccess,
-        required CompletedTaskCallback onError,
-        TaskProgressCallback? onProgress}) async {
+  Future<void> resume() async {
     if (completed) {
       onSuccess(file.path);
     } else if (!isRunning) {
       start = _downloadedByte;
       fileMode = FileMode.append;
-      run(onSuccess: onSuccess, onError: onError, onProgress: onProgress);
+      run();
     } else {
       onError('Tasks is already in running state');
     }
   }
+
+  @override
+  String? get result => taskResult;
 }
 
 class UploadTask extends Task {
   int _uploadedByte = 0;
-  late String _taskResult;
   final bool multipart;
 
   UploadTask({
@@ -327,9 +323,9 @@ class UploadTask extends Task {
       if (httpResponse.statusCode != 200) {
         onError(await Task.responseAsString(httpResponse));
       } else {
-        _taskResult = await Task.responseAsString(httpResponse);
+        taskResult = await Task.responseAsString(httpResponse);
         completed = true;
-        return onSuccess(_taskResult);
+        return onSuccess(taskResult!);
       }
     } catch (e) {
       if (!e.toString().contains('Request has been aborted')) {
@@ -474,12 +470,9 @@ class UploadTask extends Task {
   }
 
   @override
-  Future<void> run(
-      {required CompletedTaskCallback onSuccess,
-        required CompletedTaskCallback onError,
-        TaskProgressCallback? onProgress}) async {
+  Future<void> run() async {
     if (isCompleted) {
-      onSuccess(_taskResult);
+      onSuccess(taskResult!);
     } else if (!isRunning) {
       await _streamUpload(
           onSuccess: onSuccess,
@@ -493,10 +486,9 @@ class UploadTask extends Task {
   }
 
   @override
-  void cancel() async {
+  Future<void> cancel() async {
     //await _subscription.cancel();
     canceled = true;
-    paused = false;
     request.abort();
     _uploadedByte = 0;
   }
@@ -511,21 +503,21 @@ class UploadTask extends Task {
   }
 
   @override
-  Future<void> resume(
-      {required CompletedTaskCallback onSuccess,
-        required CompletedTaskCallback onError,
-        TaskProgressCallback? onProgress}) async {
+  Future<void> resume() async {
     if (isCompleted) {
-      onSuccess(_taskResult);
+      onSuccess(taskResult!);
     } else if (!isRunning) {
       start = _uploadedByte;
       canceled = false;
       headers[gResuming] = _uploadedByte > 0 ? 'true' : null;
-      await run(onSuccess: onSuccess, onError: onError, onProgress: onProgress);
+      await run();
     } else {
       onError('Task is already in running state');
     }
   }
+
+  @override
+  String? get result => taskResult;
 
 // MediaType _mediaType(File file) {
 //   return MediaType(
@@ -534,7 +526,8 @@ class UploadTask extends Task {
 // }
 }
 
-abstract class Task with TaskState {
+abstract class Task with TaskState implements TaskRunner {
+
   late final String url;
   late int start;
   late int fileSize;
@@ -543,6 +536,13 @@ abstract class Task with TaskState {
   late HttpClientRequest request;
   late final BadCertificateCallback badCertificateCallback;
   late final Map<String, dynamic> headers;
+
+  CompletedTaskCallback _onSuccess = (d) {};
+  CompletedTaskCallback _onError = (d) {};
+  TaskProgressCallback? _onProgress;
+
+  @protected
+  late final String? taskResult;
 
   @protected
   bool runOnce = false;
@@ -557,21 +557,26 @@ abstract class Task with TaskState {
     return httpClient;
   }
 
-  Future<void> run(
-      {required CompletedTaskCallback onSuccess,
-        required CompletedTaskCallback onError,
-        TaskProgressCallback? onProgress}) async {
+  @override
+  Future<void> run() async {
     runOnce = true;
   }
 
-  Future<void> pause();
-
-  Future<void> resume(
-      {required CompletedTaskCallback onSuccess,
-        required CompletedTaskCallback onError,
-        TaskProgressCallback? onProgress});
-
-  void cancel();
+  //Set onSuccess, onError and onProgressListener
+  //It must be call before run and resume to not miss events
+  void setListener({
+    required CompletedTaskCallback onSuccess,
+    required CompletedTaskCallback onError,
+    TaskProgressCallback? onProgress
+}) async {
+    _onError = onError;
+    _onSuccess = onSuccess;
+    _onProgress = onProgress;
+  }
+  
+  CompletedTaskCallback get onSuccess => _onSuccess;
+  CompletedTaskCallback get onError => _onError;
+  TaskProgressCallback? get onProgress => _onProgress;
 
   fileGetAllMock() {
     return List.generate(

@@ -9,8 +9,10 @@ import 'package:uuid/uuid.dart';
 void main() async {
   //dudExample();
 
-  String en = Auth.encodeBase64String("CEci est le string");
-  print(en);
+  String str = "CEci est le string";
+  String en = Auth.encodeBase64String(str);
+  print(str.length);
+  print(en.length);
   en = Auth.encodeBase64String(en);
   print(en);
   en = Auth.encodeBase64String(en);
@@ -212,8 +214,7 @@ void dudExample() async {
       filePath: 'data.mp4',
       trustBadCertificate: true,
       headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'});
-
-  await d.run(onProgress: (pr) async {
+  d.setListener(onProgress: (pr) async {
     // if(pr == 50) {
     //   await d.pause();
     //   print(d.isRunning);
@@ -229,6 +230,8 @@ void dudExample() async {
   }, onError: (str) {
     print(str);
   });
+
+  await d.run();
   //
   // Timer(Duration(seconds: 5), () {
   //   print('RESUMING');
