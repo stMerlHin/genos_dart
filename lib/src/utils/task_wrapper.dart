@@ -14,10 +14,10 @@ class TaskWrapper with TaskBody {
 
   @override
   Future<void> run() async {
-    if(isCompleted) {
+    if (isCompleted) {
       notifyProgressListeners(100);
       notifySuccessListeners(task.result);
-    } else if(!isRunning) {
+    } else if (!isRunning) {
       _setTaskListener();
       await task.run();
     }
@@ -25,10 +25,10 @@ class TaskWrapper with TaskBody {
 
   @override
   Future<void> resume() async {
-    if(isCompleted) {
+    if (isCompleted) {
       notifyProgressListeners(100);
       notifySuccessListeners(task.result);
-    } else if(!isRunning) {
+    } else if (!isRunning) {
       _setTaskListener();
       await task.resume();
     }
@@ -36,7 +36,7 @@ class TaskWrapper with TaskBody {
 
   @override
   Future<void> pause() async {
-    if(!isPaused) {
+    if (!isPaused) {
       await task.pause();
       notifyPauseListeners();
     }
@@ -44,7 +44,7 @@ class TaskWrapper with TaskBody {
 
   @override
   Future<void> cancel() async {
-    if(!isCanceled) {
+    if (!isCanceled) {
       task.cancel();
       notifyCancelListeners();
     }
@@ -64,12 +64,12 @@ class TaskWrapper with TaskBody {
   bool get isPaused {
     return task.isPaused;
   }
-  
+
   @override
   bool get isRunning {
     return task.isPaused;
   }
-  
+
   @override
   get result => task.result;
 
@@ -77,36 +77,35 @@ class TaskWrapper with TaskBody {
     task.setListener(
         onSuccess: notifySuccessListeners,
         onError: notifyErrorListeners,
-        onProgress: notifyProgressListeners
-    );
+        onProgress: notifyProgressListeners);
   }
-
 }
 
 abstract class TaskListener {
-  void onError([e]);
   void onSuccess([s]);
+
   void onProgress(int percent);
+
+  void onError([e]);
+
   void onPause() {}
+
   void onResume() {}
 }
 
 abstract class TaskStateNotifier {
-  
   bool get isPaused;
-  
+
   bool get isRunning;
-  
+
   bool get isCanceled;
-  
+
   bool get isCompleted;
-  
+
   get result;
-  
 }
 
 abstract class TaskStateHolder {
-
   @protected
   late bool paused;
 
@@ -115,11 +114,9 @@ abstract class TaskStateHolder {
 
   @protected
   late bool completed;
-
 }
 
 mixin TaskState implements TaskStateHolder, TaskStateNotifier {
-
   @override
   @protected
   bool paused = true;
@@ -146,7 +143,6 @@ mixin TaskState implements TaskStateHolder, TaskStateNotifier {
 }
 
 abstract class TaskRunner {
-
   Future<void> run();
 
   Future<void> pause();
@@ -157,7 +153,6 @@ abstract class TaskRunner {
 }
 
 mixin TaskBody implements TaskRunner, TaskStateNotifier {
-
   @protected
   late List<TaskListener> listeners;
 

@@ -33,7 +33,7 @@ class DownloadTask extends Task {
     this.start = start;
     file = File(savePath);
     badCertificateCallback =
-    ((X509Certificate cert, String host, int port) => trustBadCertificate);
+        ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
   }
 
@@ -97,7 +97,7 @@ class DownloadTask extends Task {
       onSuccess(file.path);
     } else if (!isRunning) {
       final HttpClient httpClient =
-      getHttpClient(onBadCertificate: badCertificateCallback);
+          getHttpClient(onBadCertificate: badCertificateCallback);
 
       paused = false;
       canceled = false;
@@ -124,7 +124,7 @@ class DownloadTask extends Task {
           var downloadedFile = file.openSync(mode: fileMode);
 
           _subscription = httpResponse.listen(
-                (data) {
+            (data) {
               _downloadedByte += data.length;
 
               downloadedFile.writeFromSync(data);
@@ -144,9 +144,9 @@ class DownloadTask extends Task {
             },
             cancelOnError: true,
           )..onError((e) {
-            onError('Connection error');
-            paused = true;
-          });
+              onError('Connection error');
+              paused = true;
+            });
         } else {
           await Task.responseAsString(httpResponse)
               .then((value) => onError(value));
@@ -218,7 +218,7 @@ class UploadTask extends Task {
     this.start = start;
     this.file = file;
     badCertificateCallback =
-    ((X509Certificate cert, String host, int port) => trustBadCertificate);
+        ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
   }
 
@@ -278,7 +278,7 @@ class UploadTask extends Task {
     try {
       final httpClient = _getHttpClient(
           onBadCertificate: ((X509Certificate cert, String host, int port) =>
-          true));
+              true));
 
       request = await httpClient.postUrl(Uri.parse(url));
 
@@ -346,7 +346,7 @@ class UploadTask extends Task {
     final url = destination;
     final httpClient = _getHttpClient(
         onBadCertificate: ((X509Certificate cert, String host, int port) =>
-        true));
+            true));
     try {
       final request = await httpClient.postUrl(Uri.parse(url));
 
@@ -363,7 +363,7 @@ class UploadTask extends Task {
       //     filename: fileUtil.basename(file.path));
 
       http.MultipartRequest requestMultipart =
-      http.MultipartRequest("POST", Uri.parse(url));
+          http.MultipartRequest("POST", Uri.parse(url));
 
       requestMultipart.files.add(multipart);
 
@@ -527,7 +527,6 @@ class UploadTask extends Task {
 }
 
 abstract class Task with TaskState implements TaskRunner {
-
   late final String url;
   late int start;
   late int fileSize;
@@ -564,16 +563,15 @@ abstract class Task with TaskState implements TaskRunner {
 
   //Set onSuccess, onError and onProgressListener
   //It must be call before run and resume to not miss events
-  void setListener({
-    required CompletedTaskCallback onSuccess,
-    required CompletedTaskCallback onError,
-    TaskProgressCallback? onProgress
-}) async {
+  void setListener(
+      {required CompletedTaskCallback onSuccess,
+      required CompletedTaskCallback onError,
+      TaskProgressCallback? onProgress}) async {
     _onError = onError;
     _onSuccess = onSuccess;
     _onProgress = onProgress;
   }
-  
+
   CompletedTaskCallback get onSuccess => _onSuccess;
   CompletedTaskCallback get onError => _onError;
   TaskProgressCallback? get onProgress => _onProgress;
@@ -581,7 +579,7 @@ abstract class Task with TaskState implements TaskRunner {
   fileGetAllMock() {
     return List.generate(
       20,
-          (i) => GUpDownMod(
+      (i) => GUpDownMod(
           fileName: 'filename $i.jpg',
           dateModified: DateTime.now().add(Duration(minutes: i)),
           size: i * 1000),
@@ -658,10 +656,10 @@ class GUpDownMod {
   }
 
   Map<String, dynamic> toJson() => {
-    "fileName": fileName,
-    "dateModified": dateModified,
-    "size": size,
-  };
+        "fileName": fileName,
+        "dateModified": dateModified,
+        "size": size,
+      };
 }
 
 Future<String> responseAsString(HttpClientResponse response) {
