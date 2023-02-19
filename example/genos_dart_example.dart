@@ -7,19 +7,19 @@ import 'package:genos_dart/src/utils/dud.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  //dudExample();
-
-  String str = "CEci est le string";
-  String en = Auth.encodeBase64String(str);
-  print(str.length);
-  print(en.length);
-  en = Auth.encodeBase64String(en);
-  print(en);
-  en = Auth.encodeBase64String(en);
-  print(en);
-  en = Auth.encodeBase64String(en);
-  print(en);
-  print(Auth.decodeBase64String(en));
+  dudExample();
+  //
+  // String str = "CEci est le string";
+  // String en = Auth.encodeBase64String(str);
+  // print(str.length);
+  // print(en.length);
+  // en = Auth.encodeBase64String(en);
+  // print(en);
+  // en = Auth.encodeBase64String(en);
+  // print(en);
+  // en = Auth.encodeBase64String(en);
+  // print(en);
+  // print(Auth.decodeBase64String(en));
 
   // await Genos.instance.initialize(
   //     appSignature: '91a2dbf0-292d-11ed-91f1-4f98460f463c',
@@ -208,30 +208,44 @@ void main() async {
   // );
 }
 
+
+
 void dudExample() async {
+
   DownloadTask d = DownloadTask.resumeFromFile(
-      url: 'http://localhost/download/data.mp4',
+      url: 'http://google.com/download/data.mp4',
       filePath: 'data.mp4',
       trustBadCertificate: true,
       headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'});
-  d.setListener(onProgress: (pr) async {
-    // if(pr == 50) {
-    //   await d.pause();
-    //   print(d.isRunning);
-    //   print('paused ${d.downloadedByte}');
-    // }
-    print('$pr% ');
-    // if(pr >= 50) {
-    //   print('pausing');
-    //   d.pause();
-    // }
-  }, onSuccess: (str) {
-    print(str);
-  }, onError: (str) {
-    print(str);
-  });
+  DownloadTaskWrapper wrapper = DownloadTaskWrapper(downloadTask: d);
+  wrapper.addListener(TaskListenerCallbacks(
+      onSuccessCalled: (str) {
+        print(str);
+      },
+      onErrorCalled: (str) {
+        print('THIS IS AN ERROR ${wrapper.isRunning}');
+      })
+  );
+  // d.setListener(onProgress: (pr) async {
+  //   // if(pr == 50) {
+  //   //   await d.pause();
+  //   //   print(d.isRunning);
+  //   //   print('paused ${d.downloadedByte}');
+  //   // }
+  //   print('$pr% ');
+  //   // if(pr >= 50) {
+  //   //   print('pausing');
+  //   //   d.pause();
+  //   // }
+  // }, onSuccess: (str) {
+  //   print(str);
+  // }, onError: (str) {
+  //   print('THIS IS AN ERROR');
+  //   print(str);
+  // });
 
-  await d.run();
+  await wrapper.run();
+  print(wrapper.isRunning);
   //
   // Timer(Duration(seconds: 5), () {
   //   print('RESUMING');

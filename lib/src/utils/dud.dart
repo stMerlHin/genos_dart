@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
 
 import '../../genos_dart.dart';
 
@@ -20,9 +21,11 @@ class DownloadTask extends Task {
   final String savePath;
   late FileMode fileMode;
   int _downloadedByte = 0;
+  late final dynamic _id;
 
   DownloadTask({
     required String url,
+    required dynamic id,
     required this.savePath,
     required this.fileMode,
     bool trustBadCertificate = false,
@@ -30,15 +33,17 @@ class DownloadTask extends Task {
     Map<String, dynamic> headers = const {},
   }) {
     this.url = url;
+    _id = id ?? Uuid().v1();
     this.start = start;
     file = File(savePath);
     badCertificateCallback =
-        ((X509Certificate cert, String host, int port) => trustBadCertificate);
+    ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
   }
 
   factory DownloadTask.resume({
     required String url,
+    dynamic id,
     required String savePath,
     required int start,
     bool trustBadCertificate = false,
@@ -46,6 +51,7 @@ class DownloadTask extends Task {
   }) {
     return DownloadTask(
         url: url,
+        id: id,
         savePath: savePath,
         start: start,
         trustBadCertificate: trustBadCertificate,
@@ -55,12 +61,14 @@ class DownloadTask extends Task {
 
   factory DownloadTask.create({
     required String url,
+    dynamic id,
     required String savePath,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
     return DownloadTask(
       url: url,
+      id: id,
       savePath: savePath,
       trustBadCertificate: trustBadCertificate,
       fileMode: FileMode.write,
@@ -97,7 +105,7 @@ class DownloadTask extends Task {
       onSuccess(file.path);
     } else if (!isRunning) {
       final HttpClient httpClient =
-          getHttpClient(onBadCertificate: badCertificateCallback);
+      getHttpClient(onBadCertificate: badCertificateCallback);
 
       paused = false;
       canceled = false;
@@ -124,7 +132,7 @@ class DownloadTask extends Task {
           var downloadedFile = file.openSync(mode: fileMode);
 
           _subscription = httpResponse.listen(
-            (data) {
+                (data) {
               _downloadedByte += data.length;
 
               downloadedFile.writeFromSync(data);
@@ -144,21 +152,26 @@ class DownloadTask extends Task {
             },
             cancelOnError: true,
           )..onError((e) {
-              onError('Connection error');
-              paused = true;
-            });
+            onError('Connection error');
+            paused = true;
+          });
         } else {
+          paused = true;
           await Task.responseAsString(httpResponse)
               .then((value) => onError(value));
         }
       } on FileSystemException {
+        paused = true;
         onError('File system error');
       } on SocketException {
+        paused = true;
         onError('Host unreachable');
       } catch (e) {
+        paused = true;
         onError(e.toString());
       }
     } else {
+      paused = true;
       onError("Task is already in running state");
     }
   }
@@ -200,25 +213,32 @@ class DownloadTask extends Task {
 
   @override
   String? get result => taskResult;
+
+  @override
+  // TODO: implement id
+  get id => _id;
 }
 
 class UploadTask extends Task {
   int _uploadedByte = 0;
   final bool multipart;
+  late final dynamic _id;
 
   UploadTask({
     required String url,
     required File file,
+    required dynamic id,
     required this.multipart,
     bool trustBadCertificate = false,
     int start = 0,
     Map<String, dynamic> headers = const {},
   }) {
+    _id = id ?? Uuid().v1();
     this.url = url;
     this.start = start;
     this.file = file;
     badCertificateCallback =
-        ((X509Certificate cert, String host, int port) => trustBadCertificate);
+    ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
   }
 
@@ -226,12 +246,14 @@ class UploadTask extends Task {
     required String url,
     required File file,
     required int start,
+    dynamic id,
     bool multipart = false,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
     return UploadTask(
         url: url,
+        id: id,
         file: file,
         start: start,
         multipart: false,
@@ -242,12 +264,14 @@ class UploadTask extends Task {
   factory UploadTask.create({
     required String url,
     required File file,
+    dynamic id,
     bool multipart = false,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
     return UploadTask(
       url: url,
+      id: id,
       multipart: false,
       file: file,
       trustBadCertificate: trustBadCertificate,
@@ -256,8 +280,6 @@ class UploadTask extends Task {
   }
 
   Future<void> _streamUpload({
-    required Function(String) onSuccess,
-    required Function(String) onError,
     required int start,
     required Map<String, dynamic> headers,
     required OnUploadProgressCallback? onUploadProgress,
@@ -278,7 +300,7 @@ class UploadTask extends Task {
     try {
       final httpClient = _getHttpClient(
           onBadCertificate: ((X509Certificate cert, String host, int port) =>
-              true));
+          true));
 
       request = await httpClient.postUrl(Uri.parse(url));
 
@@ -308,6 +330,7 @@ class UploadTask extends Task {
           },
           handleError: (error, stack, sink) {
             print(error.toString());
+            //throw error;
           },
           handleDone: (sink) {
             sink.close();
@@ -321,6 +344,7 @@ class UploadTask extends Task {
       final httpResponse = await request.close();
 
       if (httpResponse.statusCode != 200) {
+        paused = true;
         onError(await Task.responseAsString(httpResponse));
       } else {
         taskResult = await Task.responseAsString(httpResponse);
@@ -329,6 +353,7 @@ class UploadTask extends Task {
       }
     } catch (e) {
       if (!e.toString().contains('Request has been aborted')) {
+        paused = true;
         onError(e.toString());
       }
     }
@@ -346,7 +371,7 @@ class UploadTask extends Task {
     final url = destination;
     final httpClient = _getHttpClient(
         onBadCertificate: ((X509Certificate cert, String host, int port) =>
-            true));
+        true));
     try {
       final request = await httpClient.postUrl(Uri.parse(url));
 
@@ -363,7 +388,7 @@ class UploadTask extends Task {
       //     filename: fileUtil.basename(file.path));
 
       http.MultipartRequest requestMultipart =
-          http.MultipartRequest("POST", Uri.parse(url));
+      http.MultipartRequest("POST", Uri.parse(url));
 
       requestMultipart.files.add(multipart);
 
@@ -475,8 +500,6 @@ class UploadTask extends Task {
       onSuccess(taskResult!);
     } else if (!isRunning) {
       await _streamUpload(
-          onSuccess: onSuccess,
-          onError: onError,
           onUploadProgress: onProgress,
           headers: headers,
           start: start);
@@ -519,6 +542,9 @@ class UploadTask extends Task {
   @override
   String? get result => taskResult;
 
+  @override
+  get id => _id;
+
 // MediaType _mediaType(File file) {
 //   return MediaType(
 //       'application', path.extension(file.path).replaceRange(0, 1, '')
@@ -526,7 +552,8 @@ class UploadTask extends Task {
 // }
 }
 
-abstract class Task with TaskState implements TaskRunner {
+abstract class Task extends TaskRunner with TaskState {
+
   late final String url;
   late int start;
   late int fileSize;
@@ -563,10 +590,11 @@ abstract class Task with TaskState implements TaskRunner {
 
   //Set onSuccess, onError and onProgressListener
   //It must be call before run and resume to not miss events
-  void setListener(
-      {required CompletedTaskCallback onSuccess,
-      required CompletedTaskCallback onError,
-      TaskProgressCallback? onProgress}) async {
+  void setListener({
+    required CompletedTaskCallback onSuccess,
+    required CompletedTaskCallback onError,
+    TaskProgressCallback? onProgress
+  }) async {
     _onError = onError;
     _onSuccess = onSuccess;
     _onProgress = onProgress;
@@ -575,11 +603,12 @@ abstract class Task with TaskState implements TaskRunner {
   CompletedTaskCallback get onSuccess => _onSuccess;
   CompletedTaskCallback get onError => _onError;
   TaskProgressCallback? get onProgress => _onProgress;
+  dynamic get id;
 
   fileGetAllMock() {
     return List.generate(
       20,
-      (i) => GUpDownMod(
+          (i) => GUpDownMod(
           fileName: 'filename $i.jpg',
           dateModified: DateTime.now().add(Duration(minutes: i)),
           size: i * 1000),
@@ -656,10 +685,10 @@ class GUpDownMod {
   }
 
   Map<String, dynamic> toJson() => {
-        "fileName": fileName,
-        "dateModified": dateModified,
-        "size": size,
-      };
+    "fileName": fileName,
+    "dateModified": dateModified,
+    "size": size,
+  };
 }
 
 Future<String> responseAsString(HttpClientResponse response) {

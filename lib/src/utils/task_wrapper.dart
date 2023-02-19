@@ -2,13 +2,12 @@ import 'package:meta/meta.dart';
 
 import '../../genos_dart.dart';
 
-class TaskWrapper with TaskBody {
-  String taskId;
+abstract class TaskWrapper extends TaskRunner with TaskBody {
+
+  @protected
   late final Task task;
 
-  TaskWrapper({
-    required this.taskId,
-  }) {
+  TaskWrapper() {
     listeners = [];
   }
 
@@ -45,7 +44,7 @@ class TaskWrapper with TaskBody {
   @override
   Future<void> cancel() async {
     if (!isCanceled) {
-      task.cancel();
+      await task.cancel();
       notifyCancelListeners();
     }
   }
@@ -67,17 +66,35 @@ class TaskWrapper with TaskBody {
 
   @override
   bool get isRunning {
-    return task.isPaused;
+    return task.isRunning;
   }
 
   @override
   get result => task.result;
+
+  get taskId => task.id;
 
   void _setTaskListener() {
     task.setListener(
         onSuccess: notifySuccessListeners,
         onError: notifyErrorListeners,
         onProgress: notifyProgressListeners);
+  }
+}
+
+class DownloadTaskWrapper extends TaskWrapper {
+  DownloadTaskWrapper({
+    required DownloadTask downloadTask
+  }) {
+    task = downloadTask;
+  }
+}
+
+class UploadTaskWrapper extends TaskWrapper {
+  UploadTaskWrapper({
+    required UploadTask uploadTask
+  }) {
+    task = uploadTask;
   }
 }
 
@@ -91,6 +108,39 @@ abstract class TaskListener {
   void onPause() {}
 
   void onResume() {}
+}
+
+class TaskListenerCallbacks extends TaskListener {
+  final Function(dynamic) onSuccessCalled;
+  final Function(dynamic) onErrorCalled;
+  final Function(int)? onProgressCalled;
+
+  TaskListenerCallbacks({
+    required this.onSuccessCalled,
+    required this.onErrorCalled,
+    this.onProgressCalled,
+  });
+
+  @override
+  void onError([e]) {
+    onErrorCalled(e);
+  }
+
+  @override
+  void onProgress(int percent) {
+    onProgressCalled?.call(percent);
+  }
+
+  @override
+  void onSuccess([s]) {
+    onSuccessCalled(s);
+  }
+
+}
+
+abstract class LinkedTaskListener extends TaskListener {
+  void onPartialSuccess([id, result]);
+  void onPartialError([id, e]);
 }
 
 abstract class TaskStateNotifier {
@@ -150,9 +200,13 @@ abstract class TaskRunner {
   Future<void> resume();
 
   Future<void> cancel();
+
+  Future<void> retry() {
+    return resume();
+  }
 }
 
-mixin TaskBody implements TaskRunner, TaskStateNotifier {
+mixin TaskBody on TaskRunner implements TaskStateNotifier {
   @protected
   late List<TaskListener> listeners;
 
