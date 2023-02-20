@@ -7,7 +7,6 @@ const String gPort = '8080';
 const String gConnectionId = 'connection_id';
 const String gTable = 'table';
 const String gValues = 'values';
-const String gDateTimeEnable = 'date_time_enabled';
 const String gAppWsKey = 'app_ws_key';
 const String gSql = 'sql';
 const String gTag = 'tag';

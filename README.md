@@ -67,34 +67,14 @@ String table = 'client';
     //
       onSuccess: (Result result) {
         if(result.data.isNotEmpty) {
-          //result.data is a list of Map<String, dynamic> so we retrieve the first element 
-          //which is a map with table colum name as key
-          Map<String, dynamic> myData = result.data.first;
-          //Get all data
-          List<Map<String, dynamic>> myData = result.data;
+          //result.data is a list of list so we retrieve the first element 
+          //which is a list with table colum count as length
+          List myData = result.data.first;
         }
       },
-      onError: (RequestError e) {
-        print('ERROR ${e.code} ${e.message}');
+      onError: (String e) {
+        print('ERROR $e');
       });
-```
-
-SELECT with VALUES
-
-```dart
-GDirectRequest.select(
-        sql: 'SELECT * FROM student WHERE id = ? ',
-        values: [3]
-   ).exec(
-        onSuccess: (Result results) {
-          results.data.forEach((element) {
-            print(element);
-
-          });
-        }, 
-        onError: (RequestError error) {
-          print(error);
-    });
 ```
 
 ## Additional information
