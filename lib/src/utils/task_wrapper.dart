@@ -4,7 +4,6 @@ import '../../genos_dart.dart';
 import 'task_listener.dart';
 
 abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
-
   @protected
   late final Task task;
 
@@ -149,7 +148,6 @@ abstract class TaskRunner {
 }
 
 abstract class IdentifiedTaskRunner extends TaskRunner {
-
   dynamic get id;
 }
 
@@ -211,7 +209,7 @@ mixin LinkedTaskBody on TaskBody {
   @protected
   Future<void> notifyPartialErrorListeners([id, e]) async {
     for (var element in listeners) {
-      if(element is LinkedTaskListener) {
+      if (element is LinkedTaskListener) {
         element.onPartialError(id, e);
       }
     }
@@ -220,7 +218,7 @@ mixin LinkedTaskBody on TaskBody {
   @protected
   Future<void> notifyPartialSuccessListeners([id, value]) async {
     for (var element in listeners) {
-      if(element is LinkedTaskListener) {
+      if (element is LinkedTaskListener) {
         element.onPartialSuccess(id, value);
       }
     }
@@ -228,15 +226,14 @@ mixin LinkedTaskBody on TaskBody {
 
   @override
   Future<void> notifyProgressListeners(int percent) {
-    progress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount)
-        + percent ~/ initialTaskCount;
+    progress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
+        percent ~/ initialTaskCount;
     return super.notifyProgressListeners(progress);
   }
 
   Future<void> superNotifyProgressListeners(int percent) {
-   return super.notifyProgressListeners(percent);
+    return super.notifyProgressListeners(percent);
   }
 
   int get tasksLeft;
-
 }

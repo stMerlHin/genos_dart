@@ -1,4 +1,3 @@
-
 import 'package:meta/meta.dart';
 
 abstract class LinkedTaskListener extends TaskListener {
@@ -6,8 +5,8 @@ abstract class LinkedTaskListener extends TaskListener {
   void onPartialError([id, e]);
 }
 
-class LinkedTaskListenerCallbacks extends LinkedTaskListener with TaskCallbacks {
-
+class LinkedTaskListenerCallbacks extends LinkedTaskListener
+    with TaskCallbacks {
   final void Function(dynamic, dynamic)? onPartialSuccessCalled;
   final void Function(dynamic, dynamic)? onPartialErrorCalled;
 
@@ -40,7 +39,6 @@ class LinkedTaskListenerCallbacks extends LinkedTaskListener with TaskCallbacks 
   void onPartialSuccess([id, result]) {
     onPartialSuccessCalled?.call(id, result);
   }
-
 }
 
 abstract class TaskListener {
@@ -56,7 +54,6 @@ abstract class TaskListener {
 
   void onCancel() {}
 }
-
 
 mixin TaskCallbacks on TaskListener {
   late final void Function() onSuccessCalled;
@@ -83,19 +80,18 @@ mixin TaskCallbacks on TaskListener {
     onErrorCalled(e);
   }
 
-
   @mustCallSuper
   @override
   void onProgress(int percent) {
     onProgressCalled?.call(percent);
   }
 
-
   @mustCallSuper
   @override
   void onSuccess([s]) {
     onSuccessCalled();
   }
+
   @mustCallSuper
   @override
   void onPause() {
@@ -110,7 +106,6 @@ mixin TaskCallbacks on TaskListener {
 }
 
 class TaskListenerCallbacks extends TaskListener with TaskCallbacks {
-
   TaskListenerCallbacks({
     required void Function() onSuccessCalled,
     required void Function(dynamic) onErrorCalled,
@@ -126,5 +121,4 @@ class TaskListenerCallbacks extends TaskListener with TaskCallbacks {
     this.onResumeCalled = onResumeCalled;
     this.onCancelCalled = onCancelCalled;
   }
-
 }

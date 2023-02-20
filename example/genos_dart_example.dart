@@ -207,10 +207,7 @@ void main() async {
   // );
 }
 
-
-
 void dudExample() async {
-
   List<DownloadTaskWrapper> tas = [
     // DownloadTaskWrapper(
     //     downloadTask: DownloadTask.resumeFromFile(
@@ -234,35 +231,27 @@ void dudExample() async {
     // ),
     DownloadTaskWrapper(
         downloadTask: DownloadTask.resumeFromFile(
-          id: 3,
-          url: 'http://192.168.1.77/big2.mp4',
-          filePath: 'apolo.mp4',
-          trustBadCertificate: true,
-          //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
-          // )
-        )
-    ),
+      id: 3,
+      url: 'http://192.168.1.77/big2.mp4',
+      filePath: 'apolo.mp4',
+      trustBadCertificate: true,
+      //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+      // )
+    )),
   ];
 
   LinkedTasksWrapper wrapper = LinkedTasksWrapper(tas);
-  wrapper.addListener(LinkedTaskListenerCallbacks(
-      onSuccessCalled: () {
-        print('SUCCESS CALLED');
-      },
-      onErrorCalled: (str) {
-        print('ON ERROR');
-        print(str);
-      },
-      onProgressCalled: (p) {
-        print(p);
-      },
-
-      onPartialSuccessCalled: (i, v) {
-        print('PARTIAL SUCCESS ${wrapper.tasksLeft} $i $v');
-       wrapper.cancel();
-      }
-  )
-  );
+  wrapper.addListener(LinkedTaskListenerCallbacks(onSuccessCalled: () {
+    print('SUCCESS CALLED');
+  }, onErrorCalled: (str) {
+    print('ON ERROR');
+    print(str);
+  }, onProgressCalled: (p) {
+    print(p);
+  }, onPartialSuccessCalled: (i, v) {
+    print('PARTIAL SUCCESS ${wrapper.tasksLeft} $i $v');
+    wrapper.cancel();
+  }));
   // d.setListener(onProgress: (pr) async {
   //   // if(pr == 50) {
   //   //   await d.pause();
