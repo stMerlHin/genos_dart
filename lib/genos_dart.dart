@@ -14,4 +14,7 @@ export 'src/utils/utils.dart';
 export 'src/utils/task_wrapper.dart';
 export 'src/utils/linked_tasks.dart';
 export 'src/utils/linked_tasks_wrapper.dart';
+export 'src/utils/download_task_wrapper.dart';
+export 'src/utils/upload_task_wrapper.dart';
+export 'src/utils/task_listener.dart';
 export 'src/model/result.dart';

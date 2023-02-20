@@ -1,8 +1,9 @@
 import 'package:meta/meta.dart';
 
 import '../../genos_dart.dart';
+import 'task_listener.dart';
 
-abstract class TaskWrapper extends TaskRunner with TaskBody {
+abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
 
   @protected
   late final Task task;
@@ -72,7 +73,8 @@ abstract class TaskWrapper extends TaskRunner with TaskBody {
   @override
   get result => task.result;
 
-  get taskId => task.id;
+  @override
+  get id => task.id;
 
   void _setTaskListener() {
     task.setListener(
@@ -80,67 +82,6 @@ abstract class TaskWrapper extends TaskRunner with TaskBody {
         onError: notifyErrorListeners,
         onProgress: notifyProgressListeners);
   }
-}
-
-class DownloadTaskWrapper extends TaskWrapper {
-  DownloadTaskWrapper({
-    required DownloadTask downloadTask
-  }) {
-    task = downloadTask;
-  }
-}
-
-class UploadTaskWrapper extends TaskWrapper {
-  UploadTaskWrapper({
-    required UploadTask uploadTask
-  }) {
-    task = uploadTask;
-  }
-}
-
-abstract class TaskListener {
-  void onSuccess([s]);
-
-  void onProgress(int percent);
-
-  void onError([e]);
-
-  void onPause() {}
-
-  void onResume() {}
-}
-
-class TaskListenerCallbacks extends TaskListener {
-  final Function(dynamic) onSuccessCalled;
-  final Function(dynamic) onErrorCalled;
-  final Function(int)? onProgressCalled;
-
-  TaskListenerCallbacks({
-    required this.onSuccessCalled,
-    required this.onErrorCalled,
-    this.onProgressCalled,
-  });
-
-  @override
-  void onError([e]) {
-    onErrorCalled(e);
-  }
-
-  @override
-  void onProgress(int percent) {
-    onProgressCalled?.call(percent);
-  }
-
-  @override
-  void onSuccess([s]) {
-    onSuccessCalled(s);
-  }
-
-}
-
-abstract class LinkedTaskListener extends TaskListener {
-  void onPartialSuccess([id, result]);
-  void onPartialError([id, e]);
 }
 
 abstract class TaskStateNotifier {
@@ -200,10 +141,16 @@ abstract class TaskRunner {
   Future<void> resume();
 
   Future<void> cancel();
+  //
+  // @protected
+  // Future<void> retry() {
+  //   return resume();
+  // }
+}
 
-  Future<void> retry() {
-    return resume();
-  }
+abstract class IdentifiedTaskRunner extends TaskRunner {
+
+  dynamic get id;
 }
 
 mixin TaskBody on TaskRunner implements TaskStateNotifier {
@@ -247,4 +194,49 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   void dispose(TaskListener observer) {
     listeners.removeWhere((element) => element == observer);
   }
+}
+
+mixin LinkedTaskBody on TaskBody {
+  @protected
+  int initialTaskCount = 0;
+  @protected
+  int progress = 0;
+
+  @protected
+  late dynamic currentTaskId;
+
+  @protected
+  Future<bool> moveToNext();
+
+  @protected
+  Future<void> notifyPartialErrorListeners([id, e]) async {
+    for (var element in listeners) {
+      if(element is LinkedTaskListener) {
+        element.onPartialError(id, e);
+      }
+    }
+  }
+
+  @protected
+  Future<void> notifyPartialSuccessListeners([id, value]) async {
+    for (var element in listeners) {
+      if(element is LinkedTaskListener) {
+        element.onPartialSuccess(id, value);
+      }
+    }
+  }
+
+  @override
+  Future<void> notifyProgressListeners(int percent) {
+    progress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount)
+        + percent ~/ initialTaskCount;
+    return super.notifyProgressListeners(progress);
+  }
+
+  Future<void> superNotifyProgressListeners(int percent) {
+   return super.notifyProgressListeners(percent);
+  }
+
+  int get tasksLeft;
+
 }

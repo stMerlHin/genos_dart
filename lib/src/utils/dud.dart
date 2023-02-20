@@ -16,11 +16,13 @@ typedef OnDownloadProgressCallback = void Function(
 typedef OnUploadProgressCallback = void Function(int);
 typedef TaskProgressCallback = void Function(int);
 typedef CompletedTaskCallback = void Function(dynamic);
+typedef AsyncCompletedTaskCallback = Future<void> Function(dynamic, [bool]);
 
 class DownloadTask extends Task {
   final String savePath;
   late FileMode fileMode;
   int _downloadedByte = 0;
+  bool _acceptRangeRequest = false;
   late final dynamic _id;
 
   DownloadTask({
@@ -28,14 +30,18 @@ class DownloadTask extends Task {
     required dynamic id,
     required this.savePath,
     required this.fileMode,
+    int? retryCount,
+    Duration? retryDelay,
     bool trustBadCertificate = false,
     int start = 0,
     Map<String, dynamic> headers = const {},
   }) {
     this.url = url;
     _id = id ?? Uuid().v1();
+    super.retryDelay = retryDelay ?? const Duration(seconds: 2);
     this.start = start;
     file = File(savePath);
+    this.retryCount = retryCount ?? 10;
     badCertificateCallback =
     ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
@@ -46,12 +52,16 @@ class DownloadTask extends Task {
     dynamic id,
     required String savePath,
     required int start,
+    Duration? retryDelay,
+    int? retryCount,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
     return DownloadTask(
         url: url,
         id: id,
+        retryDelay: retryDelay,
+        retryCount: retryCount,
         savePath: savePath,
         start: start,
         trustBadCertificate: trustBadCertificate,
@@ -63,12 +73,16 @@ class DownloadTask extends Task {
     required String url,
     dynamic id,
     required String savePath,
+    Duration? retryDelay,
+    int? retryCount,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
     return DownloadTask(
       url: url,
       id: id,
+      retryDelay: retryDelay,
+      retryCount: retryCount,
       savePath: savePath,
       trustBadCertificate: trustBadCertificate,
       fileMode: FileMode.write,
@@ -78,7 +92,10 @@ class DownloadTask extends Task {
 
   factory DownloadTask.resumeFromFile({
     required String url,
+    dynamic id,
     required String filePath,
+    Duration? retryDelay,
+    int? retryCount,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
@@ -91,6 +108,9 @@ class DownloadTask extends Task {
     return DownloadTask.resume(
       url: url,
       savePath: filePath,
+      retryDelay: retryDelay,
+      retryCount: retryCount,
+      id: id,
       start: length,
       trustBadCertificate: trustBadCertificate,
       headers: headers,
@@ -100,19 +120,21 @@ class DownloadTask extends Task {
   int get downloadedByte => _downloadedByte;
 
   @override
-  Future run() async {
+  Future<void> run() async {
     if (completed) {
       onSuccess(file.path);
     } else if (!isRunning) {
       final HttpClient httpClient =
       getHttpClient(onBadCertificate: badCertificateCallback);
 
+      resetRetryingCount();
+
       paused = false;
       canceled = false;
 
       try {
         request = await httpClient.getUrl(Uri.parse(url));
-        request.headers.add(HttpHeaders.rangeHeader, 'bytes=$start-');
+        request.headers.add(HttpHeaders.rangeHeader, 'bytes=$start -');
 
         ///add user specific headers data
         headers.forEach((key, value) {
@@ -123,22 +145,26 @@ class DownloadTask extends Task {
         //String errorMessage = httpResponse.reasonPhrase;
 
         if (!runOnce) {
+          _acceptRangeRequest = httpResponse
+              .headers[HttpHeaders.acceptRangesHeader] != null;
+          await stabilizeTask();
           fileSize = httpResponse.contentLength + start;
           _downloadedByte = start;
           runOnce = true;
+        } else {
+          await stabilizeTask();
         }
 
-        if (httpResponse.statusCode == 200) {
+        if (httpResponse.statusCode == 200 && !isCompleted) {
           var downloadedFile = file.openSync(mode: fileMode);
 
-          _subscription = httpResponse.listen(
-                (data) {
-              _downloadedByte += data.length;
+          _subscription = httpResponse.listen((data) {
+            _downloadedByte += data.length;
 
-              downloadedFile.writeFromSync(data);
+            downloadedFile.writeFromSync(data);
 
-              onProgress?.call(((_downloadedByte / fileSize) * 100).toInt());
-            },
+            onProgress?.call(((_downloadedByte / fileSize) * 100).toInt());
+          },
             onDone: () {
               downloadedFile.closeSync();
               taskResult = file.path;
@@ -148,44 +174,56 @@ class DownloadTask extends Task {
             onError: (e) {
               downloadedFile.closeSync();
               paused = true;
+              print("io");
+              print(e);
               throw e;
             },
             cancelOnError: true,
-          )..onError((e) {
-            onError('Connection error');
+          )..onError((e) async {
             paused = true;
+            await onError('Connection error');
           });
         } else {
           paused = true;
-          await Task.responseAsString(httpResponse)
-              .then((value) => onError(value));
+          await onError(await Task.responseAsString(httpResponse), false);
         }
       } on FileSystemException {
         paused = true;
-        onError('File system error');
+        onError('File system error', false);
       } on SocketException {
         paused = true;
-        onError('Host unreachable');
+        await onError('Host unreachable');
       } catch (e) {
         paused = true;
-        onError(e.toString());
+        await onError(e.toString());
       }
-    } else {
-      paused = true;
-      onError("Task is already in running state");
     }
   }
 
   @override
   Future<void> cancel() async {
-    canceled = true;
-    paused = false;
-    await _subscription.cancel();
-    request.abort();
-    file.deleteSync();
-    start = 0;
-    _downloadedByte = 0;
-    fileMode = FileMode.write;
+    if(!isCompleted) {
+      canceled = true;
+      paused = false;
+      try {
+        await _subscription.cancel();
+      } catch (_) {
+
+      }
+      try {
+        request.abort();
+      } catch (_) {
+
+      }
+      try {
+        file.deleteSync();
+      } catch (_) {
+
+      }
+      start = 0;
+      _downloadedByte = 0;
+      fileMode = FileMode.write;
+    }
   }
 
   @override
@@ -205,9 +243,16 @@ class DownloadTask extends Task {
     } else if (!isRunning) {
       start = _downloadedByte;
       fileMode = FileMode.append;
-      run();
-    } else {
-      onError('Tasks is already in running state');
+      await run();
+    }
+  }
+
+  @override
+  Future<void> stabilizeTask() async {
+    if (!_acceptRangeRequest) {
+      start = 0;
+      _downloadedByte = 0;
+      fileMode = FileMode.write;
     }
   }
 
@@ -215,7 +260,6 @@ class DownloadTask extends Task {
   String? get result => taskResult;
 
   @override
-  // TODO: implement id
   get id => _id;
 }
 
@@ -228,6 +272,8 @@ class UploadTask extends Task {
     required String url,
     required File file,
     required dynamic id,
+    required int retryCount,
+    Duration? retryDelay,
     required this.multipart,
     bool trustBadCertificate = false,
     int start = 0,
@@ -237,6 +283,8 @@ class UploadTask extends Task {
     this.url = url;
     this.start = start;
     this.file = file;
+    this.retryDelay = retryDelay ?? const Duration(seconds: 2);
+    this.retryCount = retryCount;
     badCertificateCallback =
     ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
@@ -247,6 +295,8 @@ class UploadTask extends Task {
     required File file,
     required int start,
     dynamic id,
+    int retryCount = 10,
+    Duration? retryDelay,
     bool multipart = false,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
@@ -254,7 +304,9 @@ class UploadTask extends Task {
     return UploadTask(
         url: url,
         id: id,
+        retryCount: retryCount,
         file: file,
+        retryDelay: retryDelay,
         start: start,
         multipart: false,
         trustBadCertificate: trustBadCertificate,
@@ -265,6 +317,8 @@ class UploadTask extends Task {
     required String url,
     required File file,
     dynamic id,
+    int retryCount = 10,
+    Duration? retryDelay,
     bool multipart = false,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
@@ -272,6 +326,8 @@ class UploadTask extends Task {
     return UploadTask(
       url: url,
       id: id,
+      retryDelay: retryDelay,
+      retryCount: retryCount,
       multipart: false,
       file: file,
       trustBadCertificate: trustBadCertificate,
@@ -345,16 +401,22 @@ class UploadTask extends Task {
 
       if (httpResponse.statusCode != 200) {
         paused = true;
-        onError(await Task.responseAsString(httpResponse));
+        await onError(await Task.responseAsString(httpResponse), false);
       } else {
         taskResult = await Task.responseAsString(httpResponse);
         completed = true;
         return onSuccess(taskResult!);
       }
+    } on FileSystemException {
+      paused = true;
+      onError('File system error', false);
+    } on SocketException {
+      paused = true;
+      await onError('Host unreachable');
     } catch (e) {
-      if (!e.toString().contains('Request has been aborted')) {
+      if (!e.toString().contains('aborted')) {
         paused = true;
-        onError(e.toString());
+        await onError(e.toString());
       }
     }
   }
@@ -499,6 +561,7 @@ class UploadTask extends Task {
     if (isCompleted) {
       onSuccess(taskResult!);
     } else if (!isRunning) {
+      resetRetryingCount();
       await _streamUpload(
           onUploadProgress: onProgress,
           headers: headers,
@@ -534,8 +597,6 @@ class UploadTask extends Task {
       canceled = false;
       headers[gResuming] = _uploadedByte > 0 ? 'true' : null;
       await run();
-    } else {
-      onError('Task is already in running state');
     }
   }
 
@@ -552,19 +613,25 @@ class UploadTask extends Task {
 // }
 }
 
-abstract class Task extends TaskRunner with TaskState {
+abstract class Task extends IdentifiedTaskRunner with TaskState {
 
   late final String url;
   late int start;
   late int fileSize;
   late final File file;
+  late final int retryCount;
+  late final Duration retryDelay;
+  @protected
+  bool retrying = false;
+  @protected
+  late int retryCountLeft;
   late StreamSubscription<List<int>> _subscription;
   late HttpClientRequest request;
   late final BadCertificateCallback badCertificateCallback;
   late final Map<String, dynamic> headers;
 
   CompletedTaskCallback _onSuccess = (d) {};
-  CompletedTaskCallback _onError = (d) {};
+  AsyncCompletedTaskCallback _onError = (d, [bool retry = true]) async {};
   TaskProgressCallback? _onProgress;
 
   @protected
@@ -588,6 +655,35 @@ abstract class Task extends TaskRunner with TaskState {
     runOnce = true;
   }
 
+  Future<void> _waitAndRetry({
+    required dynamic e,
+    required CompletedTaskCallback onError,
+    bool retry = true
+  }) async {
+    await Future.delayed(retryDelay, () async {
+      await _retry(e: e, onError: onError, retry: retry);
+    }
+    );
+  }
+
+  Future<void> _retry({
+    required dynamic e,
+    required CompletedTaskCallback onError,
+    bool retry = true
+  }) async {
+    if(retry && retryCountLeft > 0 && retryCount > 0 && !canceled) {
+      retryCountLeft--;
+      retrying = true;
+      print('RETRYING $e');
+      await resume();
+    } else {
+      onError.call(e);
+    }
+  }
+
+  @override
+  bool get isPaused => super.isPaused && !retrying;
+
   //Set onSuccess, onError and onProgressListener
   //It must be call before run and resume to not miss events
   void setListener({
@@ -595,15 +691,28 @@ abstract class Task extends TaskRunner with TaskState {
     required CompletedTaskCallback onError,
     TaskProgressCallback? onProgress
   }) async {
-    _onError = onError;
+    _onError = (e, [bool retry = true]) async {
+      await _waitAndRetry(e: e, onError: onError, retry: retry);
+    };
     _onSuccess = onSuccess;
     _onProgress = onProgress;
   }
 
+  @protected
+  void resetRetryingCount() {
+    if(retrying) {
+      retrying = false;
+    } else {
+      retryCountLeft = retryCount;
+    }
+  }
+
+  @protected
+  Future<void> stabilizeTask() async {}
+
   CompletedTaskCallback get onSuccess => _onSuccess;
-  CompletedTaskCallback get onError => _onError;
+  AsyncCompletedTaskCallback get onError => _onError;
   TaskProgressCallback? get onProgress => _onProgress;
-  dynamic get id;
 
   fileGetAllMock() {
     return List.generate(

@@ -1,20 +1,15 @@
 
-import 'package:meta/meta.dart';
-
 import '../../genos_dart.dart';
 
-class LinkedTasks extends TaskRunner with TaskBody {
+class LinkedTasks extends TaskRunner with TaskBody, LinkedTaskBody {
   late List<Task> _tasks;
-  @protected
-  late dynamic currentTaskId;
   bool _canceled = false;
 
-  @protected
-  int progress = 0;
-
   LinkedTasks(List<Task> tasks) {
+    listeners = [];
     _tasks = tasks;
-    currentTaskId = tasks.isNotEmpty ? _tasks.first.id : '';
+    initialTaskCount = _tasks.length;
+    currentTaskId = _tasks.isNotEmpty ? _tasks.first.id : '';
   }
 
   @override
@@ -22,6 +17,7 @@ class LinkedTasks extends TaskRunner with TaskBody {
     if(isCompleted) {
       notifySuccessListeners();
     } else if(!isRunning) {
+      _canceled = false;
       _setTaskListener();
       await _tasks.first.run();
 
@@ -37,7 +33,10 @@ class LinkedTasks extends TaskRunner with TaskBody {
 
   @override
   Future<void> resume() async {
-    if(!isCompleted && tasksLeft != 0 && !isRunning) {
+    if(isCompleted) {
+      notifySuccessListeners();
+    } else if(!isRunning) {
+      _canceled = false;
       _setTaskListener();
       await _tasks.first.resume();
     }
@@ -45,9 +44,10 @@ class LinkedTasks extends TaskRunner with TaskBody {
 
   @override
   Future<void> cancel() async {
-    if(_tasks.isNotEmpty) {
-      await _tasks.first.cancel();
+    if(_tasks.isNotEmpty && !isCompleted && !isPaused) {
       _canceled = true;
+      await _tasks.first.cancel();
+      notifyCancelListeners();
     }
   }
 
@@ -59,18 +59,8 @@ class LinkedTasks extends TaskRunner with TaskBody {
     ];
     if(tL.isNotEmpty) {
       await tL.first.cancel();
+      await moveToNext();
     }
-    await moveToNext();
-  }
-
-  @override
-  Future<void> notifyProgressListeners(int percent) {
-    if(tasksLeft != 0) {
-      progress = percent ~/ tasksLeft;
-    } else {
-      progress = percent;
-    }
-    return super.notifyProgressListeners(progress);
   }
 
   @override
@@ -79,32 +69,18 @@ class LinkedTasks extends TaskRunner with TaskBody {
       notifyPartialSuccessListeners(_tasks.first.id, e);
       await moveToNext();
     } else {
-      notifySuccessListeners();
+      if(progress < 100) {
+        progress = 100;
+        superNotifyProgressListeners(progress);
+      }
+      super.notifySuccessListeners();
       await moveToNext();
     }
   }
 
-  @protected
-  Future<void> notifyPartialErrorListeners([id, e]) async {
-    for (var element in listeners) {
-      if(element is LinkedTaskListener) {
-        element.onPartialError(id, e);
-      }
-    }
-  }
-
-  @protected
-  Future<void> notifyPartialSuccessListeners([id, value]) async {
-    for (var element in listeners) {
-      if(element is LinkedTaskListener) {
-        element.onPartialSuccess(id, value);
-      }
-    }
-  }
-
-
+  @override
   Future<bool> moveToNext() async {
-    if(_tasks.isNotEmpty) {
+    if(_tasks.isNotEmpty && !isCanceled) {
       _tasks.removeAt(0);
       if(_tasks.isNotEmpty) {
         currentTaskId = _tasks.first.id;
@@ -119,6 +95,7 @@ class LinkedTasks extends TaskRunner with TaskBody {
   bool get isCompleted => _tasks.isEmpty
       || _tasks.last.isCompleted;
 
+  @override
   int get tasksLeft => _tasks.where(
           (element) => !element.isCompleted
   ).length;

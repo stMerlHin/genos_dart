@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:genos_dart/genos_dart.dart';
-import 'package:genos_dart/src/utils/dud.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
@@ -212,19 +211,57 @@ void main() async {
 
 void dudExample() async {
 
-  DownloadTask d = DownloadTask.resumeFromFile(
-      url: 'http://google.com/download/data.mp4',
-      filePath: 'data.mp4',
-      trustBadCertificate: true,
-      headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'});
-  DownloadTaskWrapper wrapper = DownloadTaskWrapper(downloadTask: d);
-  wrapper.addListener(TaskListenerCallbacks(
-      onSuccessCalled: (str) {
-        print(str);
+  List<DownloadTaskWrapper> tas = [
+    // DownloadTaskWrapper(
+    //     downloadTask: DownloadTask.resumeFromFile(
+    //       id: 1,
+    //       url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+    //       filePath: 'apolo11.pdf',
+    //       trustBadCertificate: true,
+    //       //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+    //       // )
+    //     )
+    // ),
+    // DownloadTaskWrapper(
+    //     downloadTask: DownloadTask.resumeFromFile(
+    //       id: 2,
+    //       url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+    //       filePath: 'apolo12.pdf',
+    //       trustBadCertificate: true,
+    //       //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+    //       // )
+    //     )
+    // ),
+    DownloadTaskWrapper(
+        downloadTask: DownloadTask.resumeFromFile(
+          id: 3,
+          url: 'http://192.168.1.77/big2.mp4',
+          filePath: 'apolo.mp4',
+          trustBadCertificate: true,
+          //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+          // )
+        )
+    ),
+  ];
+
+  LinkedTasksWrapper wrapper = LinkedTasksWrapper(tas);
+  wrapper.addListener(LinkedTaskListenerCallbacks(
+      onSuccessCalled: () {
+        print('SUCCESS CALLED');
       },
       onErrorCalled: (str) {
-        print('THIS IS AN ERROR ${wrapper.isRunning}');
-      })
+        print('ON ERROR');
+        print(str);
+      },
+      onProgressCalled: (p) {
+        print(p);
+      },
+
+      onPartialSuccessCalled: (i, v) {
+        print('PARTIAL SUCCESS ${wrapper.tasksLeft} $i $v');
+       wrapper.cancel();
+      }
+  )
   );
   // d.setListener(onProgress: (pr) async {
   //   // if(pr == 50) {
@@ -245,7 +282,7 @@ void dudExample() async {
   // });
 
   await wrapper.run();
-  print(wrapper.isRunning);
+  print("So this is a mess");
   //
   // Timer(Duration(seconds: 5), () {
   //   print('RESUMING');
