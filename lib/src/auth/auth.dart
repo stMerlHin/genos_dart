@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:genos_dart/src/utils/utils.dart';
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../genos_dart_base.dart';
@@ -11,7 +13,6 @@ import '../model/user.dart';
 import '../utils/constants.dart';
 
 class Auth {
-
   static late final Preferences _preferences;
   static final Auth _instance = Auth._();
   static final List<Function(bool)> _loginListeners = [];
@@ -22,7 +23,7 @@ class Auth {
 
   ///An instance of the [Auth]
   static Future<Auth> get instance async {
-    if(!_initialized) {
+    if (!_initialized) {
       _preferences = await Preferences.getInstance();
       _getAuthenticationData();
       _initialized = true;
@@ -31,24 +32,45 @@ class Auth {
     return _instance;
   }
 
+  static String decodeBase64String(String string) {
+    return utf8.decode(base64.decode(string));
+  }
+
+  static String encodeBase64String(String string) {
+    return base64.encode(utf8.encode(string));
+  }
+
+  static String _hashPassword(
+      {required String password, bool useSalt = false}) {
+    final salt = useSalt ? _generateRandomSalt() : '';
+    final saltedPassword = salt + password;
+    final bytes = utf8.encode(saltedPassword);
+    final hash = sha256.convert(bytes);
+    // store the salt with the hash separated by a period
+    return '$salt.$hash';
+  }
+
+  static String _generateRandomSalt() {
+    return Uuid().v1().substring(0, 8).replaceAll('-', '').replaceAll('_', '');
+  }
+
   static void _getAuthenticationData() {
     String? uid = _preferences.getString(gUserUId);
-    if(uid != null) {
+    if (uid != null) {
       String? email = _preferences.getString(gUserEmail);
       String? countryCode = _preferences.getString(gUserCountryCode);
       int? phoneNumber = _preferences.getInt(gUserPhoneNumber);
       String? authMode = _preferences.getString(gUserAuthMode);
       String? password = _preferences.getString(gUserPassword);
       AuthenticationMode mode = AuthenticationMode.parse(authMode);
-      if(mode != AuthenticationMode.none) {
+      if (mode != AuthenticationMode.none) {
         _user = User(
             uid: uid,
             email: email,
             countryCode: countryCode,
             phoneNumber: phoneNumber,
             authMode: mode,
-            password: password
-        );
+            password: password);
       }
     }
   }
@@ -70,17 +92,15 @@ class Auth {
   /// sent via email
   ///[onError] is called when the request terminated with an error
   ///[secure] when it set to true use https and http when it's set to false
-  Future<void> recoverPassword({
-    required String email,
-    required Function onSuccess,
-    required Function(String) onError,
-    bool secure = true,
-    String appLocalization = 'fr'
-  }) async {
+  Future<void> recoverPassword(
+      {required String email,
+      required Function onSuccess,
+      required Function(String) onError,
+      bool secure = true,
+      String appLocalization = 'fr'}) async {
     final url = Uri.parse(Genos.getPasswordRecoveryUrl(secure));
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -88,8 +108,7 @@ class Auth {
             gAppSignature: Genos.appSignature,
             gUserEmail: email,
             gAppLocalization: appLocalization
-          })
-      );
+          }));
 
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
@@ -116,19 +135,17 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   ///[appLocalization] is the localization of the device running the app, default
   /// to fr
-  Future<void> changePassword({
-    required String email,
-    required String password,
-    required String newPassword,
-    required Function onSuccess,
-    required Function(String) onError,
-    bool secure = true,
-    String appLocalization = 'fr'
-  }) async {
+  Future<void> changePassword(
+      {required String email,
+      required String password,
+      required String newPassword,
+      required Function onSuccess,
+      required Function(String) onError,
+      bool secure = true,
+      String appLocalization = 'fr'}) async {
     final url = Uri.parse(Genos.getChangePasswordUrl(secure));
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -138,8 +155,7 @@ class Auth {
             gUserPassword: password,
             gUserNewPassword: newPassword,
             gAppLocalization: appLocalization
-          })
-      );
+          }));
 
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
@@ -163,17 +179,15 @@ class Auth {
   ///[onSuccess] is called when user is login and
   ///[onError] is called when an error occurred.
   ///[secure] when it set to true use https and http when it's set to false
-  Future<void> loginWithPhoneNumber({
-    required String countryCode,
-    required int phoneNumber,
-    required Function(String) onSuccess,
-    required Function(String) onError,
-    bool secure = true
-  }) async {
+  Future<void> loginWithPhoneNumber(
+      {required String countryCode,
+      required int phoneNumber,
+      required Function(String) onSuccess,
+      required Function(String) onError,
+      bool secure = true}) async {
     final url = Uri.parse(Genos.getPhoneAuthUrl(secure));
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -181,8 +195,7 @@ class Auth {
             gAppSignature: Genos.appSignature,
             gUserPhoneNumber: phoneNumber,
             gUserCountryCode: countryCode
-          })
-      );
+          }));
 
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
@@ -193,9 +206,9 @@ class Auth {
               uid: result.data[gUserUId],
               phoneNumber: phoneNumber,
               countryCode: countryCode,
-              authMode: AuthenticationMode.phoneNumber
-          );
-          _preferences.putAll(user.toMap()..addAll({gUserPassword: user.password}));
+              authMode: AuthenticationMode.phoneNumber);
+          _preferences
+              .putAll(user.toMap()..addAll({gUserPassword: user.password}));
           _getAuthenticationData();
           _notifyLoginListener(true);
           onSuccess(result.data[gUserUId]);
@@ -217,19 +230,17 @@ class Auth {
   ///[onError] is call when the request failed
   ///[secure] when it set to true, https is used and http is used
   ///when it's set to false
-  Future<void> changePhoneNumber({
-    required String countryCode,
-    required int phoneNumber,
-    required String newCountryCode,
-    required int newPhoneNumber,
-    required Function() onSuccess,
-    required Function(String) onError,
-    bool secure = true
-  }) async {
+  Future<void> changePhoneNumber(
+      {required String countryCode,
+      required int phoneNumber,
+      required String newCountryCode,
+      required int newPhoneNumber,
+      required Function() onSuccess,
+      required Function(String) onError,
+      bool secure = true}) async {
     final url = Uri.parse(Genos.getPhoneChangeUrl(secure));
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -240,8 +251,7 @@ class Auth {
             gUserPhoneNumber: phoneNumber,
             gNewUserPhoneNumber: newPhoneNumber,
             gNewUserCountryCode: newCountryCode
-          })
-      );
+          }));
 
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
@@ -266,17 +276,15 @@ class Auth {
   ///[onSuccess] is called when the login is successful
   ///[onError] is called when the request terminate with failure
   ///[secure] when it set to true use https and http when it's set to false
-  Future<void> loginWithEmailAndPassword({
-    required String email,
-    required String password,
-    required Function(User) onSuccess,
-    required Function(String) onError,
-    bool secure = true
-  }) async {
+  Future<void> loginWithEmailAndPassword(
+      {required String email,
+      required String password,
+      required Function(User) onSuccess,
+      required Function(String) onError,
+      bool secure = true}) async {
     final url = Uri.parse(Genos.getEmailLoginUrl(secure));
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -284,8 +292,7 @@ class Auth {
             gAppSignature: Genos.appSignature,
             gUserEmail: email,
             gUserPassword: password
-          })
-      );
+          }));
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
         if (result.errorHappened) {
@@ -316,28 +323,24 @@ class Auth {
   ///  unfortunately detached due to connection issue
   ///[onError] is called when an error occurred
   ///[secure] when it set to true use https and http when it's set to false
-  Future<void> changeEmail({
-    required String newEmail,
-    required String oldEmail,
-    required String password,
-    required Function onEmailSent,
-    Function(String)? onListenerDisconnected,
-    Function()? onEmailConfirmed,
-    required Function(String) onError,
-    bool secure = true
-  }) async {
+  Future<void> changeEmail(
+      {required String newEmail,
+      required String oldEmail,
+      required String password,
+      required Function onEmailSent,
+      Function(String)? onListenerDisconnected,
+      Function()? onEmailConfirmed,
+      required Function(String) onError,
+      bool secure = true}) async {
     final url = Uri.parse(Genos.getEmailChangeUrl(secure));
 
     WebSocketChannel channel;
 
     channel = createChannel('auth/email_confirmation/listen', secure);
 
-    channel.sink.add(jsonEncode({
-      gAppWsKey: Genos.appSignature,
-      gUserEmail: newEmail
-    }));
+    channel.sink
+        .add(jsonEncode({gAppWsKey: Genos.appSignature, gUserEmail: newEmail}));
     channel.stream.listen((event) {
-
       User user = User.fromJson(event);
       //add user to preference
       _preferences.putAll(user.toMap());
@@ -346,7 +349,6 @@ class Auth {
 
       onEmailConfirmed?.call();
       channel.sink.close();
-
     }, onError: (e) {
       onError(e);
 
@@ -356,8 +358,7 @@ class Auth {
     });
 
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -366,8 +367,7 @@ class Auth {
             gUserEmail: oldEmail,
             gUserNewEmail: newEmail,
             gUserPassword: password
-          })
-      );
+          }));
 
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
@@ -396,27 +396,23 @@ class Auth {
   ///  unfortunately detached due to connection issue
   ///[onError] is called when an error occurred
   ///[secure] when it set to true use https and http when it's set to false
-  Future<void> signingWithEmailAndPassword({
-    required String email,
-    required String password,
-    required Function onEmailSent,
-    Function(String)? onListenerDisconnected,
-    Function(User)? onEmailConfirmed,
-    required Function(String) onError,
-    bool secure = true
-  }) async {
+  Future<void> signingWithEmailAndPassword(
+      {required String email,
+      required String password,
+      required Function onEmailSent,
+      Function(String)? onListenerDisconnected,
+      Function(User)? onEmailConfirmed,
+      required Function(String) onError,
+      bool secure = true}) async {
     final url = Uri.parse(Genos.getEmailSigningUrl(secure));
 
     WebSocketChannel channel;
 
     channel = createChannel('auth/email_confirmation/listen', secure);
 
-    channel.sink.add(jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
-      gUserEmail: email
-    }));
+    channel.sink
+        .add(jsonEncode({gAppWsKey: Genos.appWsSignature, gUserEmail: email}));
     channel.stream.listen((event) {
-
       User user = User.fromJson(event);
       //add user to preference
       _preferences.putAll(user.toMap()..addAll({gUserPassword: password}));
@@ -424,15 +420,12 @@ class Auth {
       _notifyLoginListener(true);
       onEmailConfirmed?.call(user);
       //channel.sink.close();
-
     }, onError: (e) {
       onListenerDisconnected?.call(e.toString());
-    }).onDone(() {
-    });
+    }).onDone(() {});
 
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -440,8 +433,7 @@ class Auth {
             gAppSignature: Genos.appSignature,
             gUserEmail: email,
             gUserPassword: password
-          })
-      );
+          }));
 
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
@@ -461,33 +453,30 @@ class Auth {
     }
   }
 
-  Future<void> loginWithQRCode({
-    required String platform,
-    required Function(User) onSuccess,
-    required Function(String) onCodeReceived,
-    required Function(String) onDetached,
-    required Function(String) onError,
-    Function()? onDone,
-    bool secure = true
-  }) async {
+  Future<void> loginWithQRCode(
+      {required String platform,
+      required Function(User) onSuccess,
+      required Function(String) onCodeReceived,
+      required Function(String) onDetached,
+      required Function(String) onError,
+      Function()? onDone,
+      bool secure = true}) async {
     //final url = Uri.parse(Genos.getEmailSigningUrl(secure));
 
     WebSocketChannel channel;
 
     channel = createChannel(Genos.qrLoginRoute, secure);
 
-    channel.sink.add(jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
-      gPlatform: platform
-    }));
+    channel.sink.add(
+        jsonEncode({gAppWsKey: Genos.appWsSignature, gPlatform: platform}));
 
     channel.stream.listen((event) {
       Map<String, dynamic> data = jsonDecode(event);
-      if(data[gPartialData] == true) {
+      if (data[gPartialData] == true) {
         onCodeReceived(data[gData]);
       } else {
         AuthResult auth = AuthResult.fromJson(event);
-        if(!auth.errorHappened) {
+        if (!auth.errorHappened) {
           User user = User.fromMap(auth.data);
           //add user to preference
           _preferences.putAll(user.toMap());
@@ -502,7 +491,6 @@ class Auth {
           onError(auth.errorMessage);
         }
       }
-
     }, onError: (e) {
       onDetached(e.toString());
     }).onDone(() {
@@ -519,8 +507,7 @@ class Auth {
   }) async {
     final url = Uri.parse(Genos.getQRConfirmationUrl(secure));
     try {
-      final response = await http.post(
-          url,
+      final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
           },
@@ -528,8 +515,7 @@ class Auth {
             gAppSignature: Genos.appSignature,
             gUser: user.toNullPasswordMap(),
             gQrUid: qrCodeData
-          })
-      );
+          }));
       if (response.statusCode == 200) {
         AuthResult result = AuthResult.fromJson(response.body);
         if (result.errorHappened) {
@@ -553,12 +539,9 @@ class Auth {
     _notifyLoginListener(false);
   }
 
-
   ///Tells if the current user is authenticated or not
   bool get isAuthenticated => _user != null;
 
   ///The current user
   User? get user => _user;
-
-
 }

@@ -11,10 +11,7 @@ class RequestError {
   });
 
   factory RequestError.fromMap(Map<String, dynamic> map) {
-    return RequestError(
-        message: map[gMessage],
-        code: map[gCode]
-    );
+    return RequestError(message: map[gMessage], code: map[gCode]);
   }
 
   static RequestError fromJson(String json) {
@@ -23,22 +20,15 @@ class RequestError {
   }
 
   String toJson() {
-    return jsonEncode({
-      gMessage: message,
-      gCode: code
-    });
+    return jsonEncode({gMessage: message, gCode: code});
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      gMessage: message,
-      gCode: code
-    };
+    return {gMessage: message, gCode: code};
   }
 
   @override
   String toString() {
     return toMap().toString();
   }
-
 }

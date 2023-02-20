@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
@@ -7,11 +6,16 @@ class Result {
   final List<Map<String, dynamic>> data;
   final bool errorHappened;
   final RequestError? error;
+  static DateTime? _serverDateTime;
 
   Result({this.data = const [], this.errorHappened = false, this.error});
 
   static Result fromJson(String json) {
     var map = jsonDecode(json);
+
+    //get the server dateTime
+    Result._serverDateTime = DateTime.parse(map[gDateTime]);
+
     Map<String, dynamic>? e = map[gError];
     List<Map<String, dynamic>> l = [];
     bool err = map[gErrorHappened];
@@ -29,12 +33,11 @@ class Result {
   }
 
   String toJson() {
-    return jsonEncode({
-      gData: data,
-      gErrorHappened: errorHappened,
-      gError: error?.toMap()
-    });
+    return jsonEncode(
+        {gData: data, gErrorHappened: errorHappened, gError: error?.toMap()});
   }
+
+  static DateTime? get serverDateTime => _serverDateTime;
 }
 
 class AuthResult {
@@ -74,7 +77,6 @@ class AuthResult {
         errorMessage: map[gError]);
   }
 
-
   static AuthResult fromMap(Map<String, dynamic> map) {
     return AuthResult(
         data: map[gData],
@@ -82,13 +84,8 @@ class AuthResult {
         errorMessage: map[gError]);
   }
 
-
   String toJson() {
-    return jsonEncode({
-      gData: data,
-      gErrorHappened: errorHappened,
-      gError: errorMessage
-    });
+    return jsonEncode(
+        {gData: data, gErrorHappened: errorHappened, gError: errorMessage});
   }
-
 }
