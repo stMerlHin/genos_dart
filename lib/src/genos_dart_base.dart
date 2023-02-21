@@ -525,7 +525,7 @@ class GDirectRequest {
 
   String _toJson() {
     return jsonEncode({
-      gAppSignature: Auth.encodeBase64String(Genos.appSignature, Genos.tour),
+      gAppSignature: Genos.appSignature,
       gConnectionId: connectionId,
       gTable: table,
       gDateTimeEnable: dateTimeValueEnabled,
