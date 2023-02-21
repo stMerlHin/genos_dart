@@ -35,7 +35,7 @@ class Auth {
   static String decodeBase64String(String string, [int tour = 1]) {
     String pass = string;
     for(int i = 0; i < tour; i++) {
-      pass = utf8.decode(base64.decode(string));
+      pass = utf8.decode(base64.decode(pass));
     }
     return pass;
   }
@@ -43,7 +43,7 @@ class Auth {
   static String encodeBase64String(String string, [int tour = 1]) {
     String pass = string;
     for(int i = 0; i < tour; i++) {
-      pass = base64.encode(utf8.encode(string));
+      pass = base64.encode(utf8.encode(pass));
     }
     return pass;
   }

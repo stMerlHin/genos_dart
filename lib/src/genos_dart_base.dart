@@ -110,13 +110,11 @@ class Genos {
       _tour
   );
 
-  static String get appWsSignature {
-    String key = Auth.encodeBase64String(_appWsSignature);
-    for (int i = 1; i < _tour; i++) {
-      key = Auth.encodeBase64String(key);
-    }
-    return key;
-  }
+  static String get appWsSignature => Auth.encodeBase64String(
+      _appWsSignature,
+      _tour
+  );
+
 
   static String get appPrivateDirectory => _privateDirectory;
   static String get connectionId => _connectionId;
