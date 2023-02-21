@@ -32,12 +32,20 @@ class Auth {
     return _instance;
   }
 
-  static String decodeBase64String(String string) {
-    return utf8.decode(base64.decode(string));
+  static String decodeBase64String(String string, [int tour = 1]) {
+    String pass = string;
+    for(int i = 0; i < tour; i++) {
+      pass = utf8.decode(base64.decode(string));
+    }
+    return pass;
   }
 
-  static String encodeBase64String(String string) {
-    return base64.encode(utf8.encode(string));
+  static String encodeBase64String(String string, [int tour = 1]) {
+    String pass = string;
+    for(int i = 0; i < tour; i++) {
+      pass = base64.encode(utf8.encode(string));
+    }
+    return pass;
   }
 
   static String _hashPassword(

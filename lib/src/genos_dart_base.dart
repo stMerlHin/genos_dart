@@ -105,13 +105,10 @@ class Genos {
   static Genos get instance => _instance;
   static int get tour => _tour;
   static String get encryptionKey => _encryptionKey;
-  static String get appSignature {
-    String key = Auth.encodeBase64String(_appSignature);
-    for (int i = 1; i < _tour; i++) {
-      key = Auth.encodeBase64String(key);
-    }
-    return key;
-  }
+  static String get appSignature => Auth.encodeBase64String(
+      _appSignature,
+      _tour
+  );
 
   static String get appWsSignature {
     String key = Auth.encodeBase64String(_appWsSignature);
@@ -530,7 +527,7 @@ class GDirectRequest {
 
   String _toJson() {
     return jsonEncode({
-      gAppSignature: Genos.appSignature,
+      gAppSignature: Auth.encodeBase64String(Genos.appSignature, Genos.tour),
       gConnectionId: connectionId,
       gTable: table,
       gDateTimeEnable: dateTimeValueEnabled,
