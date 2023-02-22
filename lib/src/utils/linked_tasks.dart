@@ -26,6 +26,7 @@ class LinkedTasks extends TaskRunner with TaskBody, LinkedTaskBody {
   Future<void> pause() async {
     if (!isCompleted && isRunning) {
       await _tasks.first.pause();
+      notifyPauseListeners();
     }
   }
 
@@ -36,7 +37,9 @@ class LinkedTasks extends TaskRunner with TaskBody, LinkedTaskBody {
     } else if (!isRunning) {
       _canceled = false;
       _setTaskListener();
+      notifyResumeListeners();
       await _tasks.first.resume();
+
     }
   }
 

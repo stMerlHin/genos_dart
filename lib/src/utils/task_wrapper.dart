@@ -180,13 +180,25 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   }
 
   @protected
-  Future<void> notifyPauseListeners() async {}
+  Future<void> notifyPauseListeners() async {
+    for (var element in listeners) {
+      element.onPause();
+    }
+  }
 
   @protected
-  Future<void> notifyCancelListeners() async {}
+  Future<void> notifyCancelListeners() async {
+    for (var element in listeners) {
+      element.onCancel();
+    }
+  }
 
   @protected
-  Future<void> notifyResumeListeners() async {}
+  Future<void> notifyResumeListeners() async {
+    for (var element in listeners) {
+      element.onResume();
+    }
+  }
 
   void dispose(TaskListener observer) {
     listeners.removeWhere((element) => element == observer);

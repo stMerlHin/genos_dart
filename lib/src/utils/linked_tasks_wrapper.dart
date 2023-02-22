@@ -164,5 +164,7 @@ class LinkedTasksWrapper extends TaskRunner
 
   @protected
   @override
-  void onCancel() {}
+  void onCancel() {
+    notifyCancelListeners();
+  }
 }
