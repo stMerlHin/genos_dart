@@ -72,9 +72,9 @@ class LinkedTasksWrapper extends TaskRunner
       notifyPartialSuccessListeners(_tasksWrapper.first.id, e);
       await moveToNext();
     } else {
-      if (progress < 100) {
-        progress = 100;
-        superNotifyProgressListeners(progress);
+      if (currentProgress < 100) {
+        currentProgress = 100;
+        superNotifyProgressListeners(currentProgress);
       }
       super.notifySuccessListeners();
       await moveToNext();

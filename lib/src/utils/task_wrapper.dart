@@ -1,7 +1,6 @@
 import 'package:meta/meta.dart';
 
 import '../../genos_dart.dart';
-import 'task_listener.dart';
 
 abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @protected
@@ -198,7 +197,7 @@ mixin LinkedTaskBody on TaskBody {
   @protected
   int initialTaskCount = 0;
   @protected
-  int progress = 0;
+  int currentProgress = 0;
 
   @protected
   late dynamic currentTaskId;
@@ -226,9 +225,9 @@ mixin LinkedTaskBody on TaskBody {
 
   @override
   Future<void> notifyProgressListeners(int percent) {
-    progress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
+    currentProgress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
         percent ~/ initialTaskCount;
-    return super.notifyProgressListeners(progress);
+    return super.notifyProgressListeners(currentProgress);
   }
 
   Future<void> superNotifyProgressListeners(int percent) {
@@ -236,4 +235,5 @@ mixin LinkedTaskBody on TaskBody {
   }
 
   int get tasksLeft;
+  int get progress => currentProgress;
 }
