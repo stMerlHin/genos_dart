@@ -74,6 +74,10 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @override
   get id => task.id;
 
+  @override
+  // TODO: implement name
+  String get name => task.name;
+
   void _setTaskListener() {
     task.setListener(
         onSuccess: notifySuccessListeners,
@@ -92,6 +96,8 @@ abstract class TaskStateNotifier {
   bool get isCompleted;
 
   get result;
+
+  int get progress;
 }
 
 abstract class TaskStateHolder {
@@ -139,6 +145,8 @@ abstract class TaskRunner {
   Future<void> resume();
 
   Future<void> cancel();
+
+  String get name;
   //
   // @protected
   // Future<void> retry() {
@@ -153,6 +161,9 @@ abstract class IdentifiedTaskRunner extends TaskRunner {
 mixin TaskBody on TaskRunner implements TaskStateNotifier {
   @protected
   late List<TaskListener> listeners;
+
+  @protected
+  int currentProgress = 0;
 
   void addListener(TaskListener listener) {
     listeners.add(listener);
@@ -203,13 +214,14 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   void dispose(TaskListener observer) {
     listeners.removeWhere((element) => element == observer);
   }
+
+  @override
+  int get progress => currentProgress;
 }
 
 mixin LinkedTaskBody on TaskBody {
   @protected
   int initialTaskCount = 0;
-  @protected
-  int currentProgress = 0;
 
   @protected
   late dynamic currentTaskId;
@@ -247,5 +259,4 @@ mixin LinkedTaskBody on TaskBody {
   }
 
   int get tasksLeft;
-  int get progress => currentProgress;
 }

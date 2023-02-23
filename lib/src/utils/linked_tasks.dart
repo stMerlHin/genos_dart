@@ -1,14 +1,27 @@
+import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
+
 import '../../genos_dart.dart';
 
-class LinkedTasks extends TaskRunner with TaskBody, LinkedTaskBody {
+class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   late List<Task> _tasks;
   bool _canceled = false;
 
-  LinkedTasks(List<Task> tasks) {
+  @protected
+  late String taskId;
+  @protected
+  late String taskName;
+
+  LinkedTasks(List<Task> tasks, {
+    String name = '',
+    dynamic id,
+}) {
     listeners = [];
     _tasks = tasks;
     initialTaskCount = _tasks.length;
     currentTaskId = _tasks.isNotEmpty ? _tasks.first.id : '';
+    taskName = name;
+    taskId = id ?? Uuid().v1;
   }
 
   @override
@@ -126,4 +139,12 @@ class LinkedTasks extends TaskRunner with TaskBody, LinkedTaskBody {
     }
     return false;
   }
+
+  @override
+  // TODO: implement id
+  get id => taskId;
+
+  @override
+  // TODO: implement name
+  String get name => taskName;
 }

@@ -1,18 +1,28 @@
 import 'package:genos_dart/genos_dart.dart';
 import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
 
-class LinkedTasksWrapper extends TaskRunner
+class LinkedTasksWrapper extends IdentifiedTaskRunner
     with TaskBody, LinkedTaskBody
     implements TaskListener {
   late List<TaskWrapper> _tasksWrapper;
   bool _listenerAdded = false;
   bool _canceled = false;
+  @protected
+  late final String taskName;
+  @protected
+  late dynamic taskId;
 
-  LinkedTasksWrapper(List<TaskWrapper> tasksWrapper) {
+  LinkedTasksWrapper(List<TaskWrapper> tasksWrapper, {
+    String name = '',
+    dynamic id,
+  }) {
     listeners = [];
     _tasksWrapper = tasksWrapper;
     initialTaskCount = tasksWrapper.length;
     currentTaskId = tasksWrapper.isNotEmpty ? tasksWrapper.first.id : '';
+    taskName = name;
+    taskId = id ?? Uuid().v1();
   }
 
   @override
@@ -167,4 +177,12 @@ class LinkedTasksWrapper extends TaskRunner
   void onCancel() {
     notifyCancelListeners();
   }
+
+  @override
+  // TODO: implement name
+  String get name => taskName;
+
+  @override
+  // TODO: implement id
+  get id => taskId;
 }
