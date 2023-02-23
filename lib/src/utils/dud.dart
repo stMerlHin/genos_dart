@@ -287,6 +287,7 @@ class UploadTask extends Task {
     this.url = url;
     this.start = start;
     this.file = file;
+    taskName = name ?? '';
     this.retryDelay = retryDelay ?? const Duration(seconds: 2);
     this.retryCount = retryCount;
     badCertificateCallback =

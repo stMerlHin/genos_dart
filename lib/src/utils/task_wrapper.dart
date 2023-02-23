@@ -49,6 +49,12 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   }
 
   @override
+  Future<void> notifyProgressListeners(int percent) {
+    currentProgress = percent;
+    return super.notifyProgressListeners(percent);
+  }
+
+  @override
   bool get isCompleted {
     return task.completed;
   }
