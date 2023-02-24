@@ -49,12 +49,6 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   }
 
   @override
-  Future<void> notifyProgressListeners(int percent) {
-    currentProgress = percent;
-    return super.notifyProgressListeners(percent);
-  }
-
-  @override
   bool get isCompleted {
     return task.completed;
   }
@@ -191,6 +185,7 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
 
   @protected
   Future<void> notifyProgressListeners(int percent) async {
+    currentProgress = percent;
     for (var element in listeners) {
       element.onProgress(percent);
     }
