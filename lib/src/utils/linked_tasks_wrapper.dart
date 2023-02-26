@@ -1,18 +1,28 @@
 import 'package:genos_dart/genos_dart.dart';
 import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
 
-class LinkedTasksWrapper extends TaskRunner
+class LinkedTasksWrapper extends IdentifiedTaskRunner
     with TaskBody, LinkedTaskBody
     implements TaskListener {
-  late List<TaskWrapper> _tasksWrapper;
+  @protected
+  final List<TaskWrapper> tasksWrapper;
   bool _listenerAdded = false;
   bool _canceled = false;
+  @protected
+  late final String taskName;
+  @protected
+  late dynamic taskId;
 
-  LinkedTasksWrapper(List<TaskWrapper> tasksWrapper) {
+  LinkedTasksWrapper(this.tasksWrapper, {
+    String name = '',
+    dynamic id,
+  }) {
     listeners = [];
-    _tasksWrapper = tasksWrapper;
     initialTaskCount = tasksWrapper.length;
     currentTaskId = tasksWrapper.isNotEmpty ? tasksWrapper.first.id : '';
+    taskName = name;
+    taskId = id ?? Uuid().v1();
   }
 
   @override
@@ -22,14 +32,14 @@ class LinkedTasksWrapper extends TaskRunner
     } else if (!isRunning) {
       _canceled = false;
       _setTaskListener();
-      await _tasksWrapper.first.run();
+      await tasksWrapper.first.run();
     }
   }
 
   @override
   Future<void> pause() async {
     if (!isCompleted && isRunning) {
-      await _tasksWrapper.first.pause();
+      await tasksWrapper.first.pause();
     }
   }
 
@@ -40,15 +50,15 @@ class LinkedTasksWrapper extends TaskRunner
     } else if (!isRunning) {
       _canceled = false;
       _setTaskListener();
-      await _tasksWrapper.first.resume();
+      await tasksWrapper.first.resume();
     }
   }
 
   @override
   Future<void> cancel() async {
-    if (_tasksWrapper.isNotEmpty && !isCompleted) {
+    if (tasksWrapper.isNotEmpty && !isCompleted) {
       _canceled = true;
-      await _tasksWrapper.first.cancel();
+      await tasksWrapper.first.cancel();
       notifyCancelListeners();
     }
   }
@@ -57,7 +67,7 @@ class LinkedTasksWrapper extends TaskRunner
   ///completed and remove it
   Future<void> cancelTask(dynamic id) async {
     List<TaskWrapper> tL = [
-      ..._tasksWrapper
+      ...tasksWrapper
           .where((element) => element.id == id && !element.isCompleted)
     ];
     if (tL.isNotEmpty) {
@@ -69,12 +79,12 @@ class LinkedTasksWrapper extends TaskRunner
   @override
   Future<void> notifySuccessListeners([e]) async {
     if (!isCompleted) {
-      notifyPartialSuccessListeners(_tasksWrapper.first.id, e);
+      notifyPartialSuccessListeners(tasksWrapper.first.id, e);
       await moveToNext();
     } else {
-      if (progress < 100) {
-        progress = 100;
-        superNotifyProgressListeners(progress);
+      if (currentProgress < 100) {
+        currentProgress = 100;
+        superNotifyProgressListeners(currentProgress);
       }
       super.notifySuccessListeners();
       await moveToNext();
@@ -84,10 +94,10 @@ class LinkedTasksWrapper extends TaskRunner
   @override
   Future<bool> moveToNext() async {
     _listenerAdded = false;
-    if (_tasksWrapper.isNotEmpty && !isCanceled && !isPaused) {
-      _tasksWrapper.removeAt(0);
-      if (_tasksWrapper.isNotEmpty) {
-        currentTaskId = _tasksWrapper.first.id;
+    if (tasksWrapper.isNotEmpty && !isCanceled && !isPaused) {
+      tasksWrapper.removeAt(0);
+      if (tasksWrapper.isNotEmpty) {
+        currentTaskId = tasksWrapper.first.id;
         run();
         return true;
       }
@@ -97,18 +107,18 @@ class LinkedTasksWrapper extends TaskRunner
 
   @override
   bool get isCompleted =>
-      _tasksWrapper.isEmpty || _tasksWrapper.last.isCompleted;
+      tasksWrapper.isEmpty || tasksWrapper.last.isCompleted;
 
   @override
   int get tasksLeft =>
-      _tasksWrapper.where((element) => !element.isCompleted).length;
+      tasksWrapper.where((element) => !element.isCompleted).length;
 
   @override
   bool get result => tasksLeft == 0 ? true : false;
 
   void _setTaskListener() {
     if (!_listenerAdded) {
-      _tasksWrapper.first.addListener(this);
+      tasksWrapper.first.addListener(this);
       _listenerAdded = true;
     }
   }
@@ -119,7 +129,7 @@ class LinkedTasksWrapper extends TaskRunner
   @override
   bool get isPaused {
     if (tasksLeft > 0) {
-      return _tasksWrapper.first.isPaused;
+      return tasksWrapper.first.isPaused;
     }
     return false;
   }
@@ -127,7 +137,7 @@ class LinkedTasksWrapper extends TaskRunner
   @override
   bool get isRunning {
     if (tasksLeft > 0) {
-      return _tasksWrapper.first.isRunning;
+      return tasksWrapper.first.isRunning;
     }
     return false;
   }
@@ -164,5 +174,15 @@ class LinkedTasksWrapper extends TaskRunner
 
   @protected
   @override
-  void onCancel() {}
+  void onCancel() {
+    notifyCancelListeners();
+  }
+
+  @override
+  // TODO: implement name
+  String get name => taskName;
+
+  @override
+  // TODO: implement id
+  get id => taskId;
 }

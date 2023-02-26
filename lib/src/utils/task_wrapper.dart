@@ -1,7 +1,6 @@
 import 'package:meta/meta.dart';
 
 import '../../genos_dart.dart';
-import 'task_listener.dart';
 
 abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @protected
@@ -75,6 +74,10 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @override
   get id => task.id;
 
+  @override
+  // TODO: implement name
+  String get name => task.name;
+
   void _setTaskListener() {
     task.setListener(
         onSuccess: notifySuccessListeners,
@@ -93,6 +96,8 @@ abstract class TaskStateNotifier {
   bool get isCompleted;
 
   get result;
+
+  int get progress;
 }
 
 abstract class TaskStateHolder {
@@ -140,6 +145,8 @@ abstract class TaskRunner {
   Future<void> resume();
 
   Future<void> cancel();
+
+  String get name;
   //
   // @protected
   // Future<void> retry() {
@@ -154,6 +161,9 @@ abstract class IdentifiedTaskRunner extends TaskRunner {
 mixin TaskBody on TaskRunner implements TaskStateNotifier {
   @protected
   late List<TaskListener> listeners;
+
+  @protected
+  int currentProgress = 0;
 
   void addListener(TaskListener listener) {
     listeners.add(listener);
@@ -175,30 +185,44 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
 
   @protected
   Future<void> notifyProgressListeners(int percent) async {
+    currentProgress = percent;
     for (var element in listeners) {
       element.onProgress(percent);
     }
   }
 
   @protected
-  Future<void> notifyPauseListeners() async {}
+  Future<void> notifyPauseListeners() async {
+    for (var element in listeners) {
+      element.onPause();
+    }
+  }
 
   @protected
-  Future<void> notifyCancelListeners() async {}
+  Future<void> notifyCancelListeners() async {
+    for (var element in listeners) {
+      element.onCancel();
+    }
+  }
 
   @protected
-  Future<void> notifyResumeListeners() async {}
+  Future<void> notifyResumeListeners() async {
+    for (var element in listeners) {
+      element.onResume();
+    }
+  }
 
   void dispose(TaskListener observer) {
     listeners.removeWhere((element) => element == observer);
   }
+
+  @override
+  int get progress => currentProgress;
 }
 
 mixin LinkedTaskBody on TaskBody {
   @protected
   int initialTaskCount = 0;
-  @protected
-  int progress = 0;
 
   @protected
   late dynamic currentTaskId;
@@ -226,9 +250,9 @@ mixin LinkedTaskBody on TaskBody {
 
   @override
   Future<void> notifyProgressListeners(int percent) {
-    progress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
+    currentProgress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
         percent ~/ initialTaskCount;
-    return super.notifyProgressListeners(progress);
+    return super.notifyProgressListeners(currentProgress);
   }
 
   Future<void> superNotifyProgressListeners(int percent) {
