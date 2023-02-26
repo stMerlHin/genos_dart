@@ -28,7 +28,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @override
   Future<void> run() async {
     if (isCompleted) {
-      notifySuccessListeners();
+      notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
       _setTaskListener();
@@ -46,7 +46,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @override
   Future<void> resume() async {
     if (isCompleted) {
-      notifySuccessListeners();
+      notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
       _setTaskListener();
@@ -59,7 +59,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
     if (tasksWrapper.isNotEmpty && !isCompleted) {
       _canceled = true;
       await tasksWrapper.first.cancel();
-      notifyCancelListeners();
+      notifyCancelListeners(id);
     }
   }
 
@@ -77,16 +77,16 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   }
 
   @override
-  Future<void> notifySuccessListeners([e]) async {
+  Future<void> notifySuccessListeners([e, id]) async {
     if (!isCompleted) {
-      notifyPartialSuccessListeners(tasksWrapper.first.id, e);
+      notifyPartialSuccessListeners(e, focusedTaskId);
       await moveToNext();
     } else {
       if (currentProgress < 100) {
         currentProgress = 100;
-        superNotifyProgressListeners(currentProgress);
+        superNotifyProgressListeners(currentProgress, id);
       }
-      super.notifySuccessListeners();
+      super.notifySuccessListeners(e, id);
       await moveToNext();
     }
   }
@@ -144,45 +144,43 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
 
   @protected
   @override
-  void onError([e]) {
-    notifyErrorListeners(e);
+  void onError([e, id]) {
+    notifyErrorListeners(e, id);
   }
 
   @protected
   @override
-  void onPause() {
-    notifyPauseListeners();
+  void onPause([id]) {
+    notifyPauseListeners(id);
   }
 
   @protected
   @override
-  void onProgress(int percent) {
-    notifyProgressListeners(percent);
+  void onProgress(int percent, [id]) {
+    notifyProgressListeners(percent, id);
   }
 
   @protected
   @override
-  void onResume() {
-    notifyResumeListeners();
+  void onResume([id]) {
+    notifyResumeListeners(id);
   }
 
   @protected
   @override
-  void onSuccess([s]) {
-    notifySuccessListeners(s);
+  void onSuccess([s, id]) {
+    notifySuccessListeners(s, id);
   }
 
   @protected
   @override
-  void onCancel() {
-    notifyCancelListeners();
+  void onCancel([id]) {
+    notifyCancelListeners(id);
   }
 
   @override
-  // TODO: implement name
   String get name => taskName;
 
   @override
-  // TODO: implement id
   get id => taskId;
 }

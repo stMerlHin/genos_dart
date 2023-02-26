@@ -27,7 +27,7 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   @override
   Future<void> run() async {
     if (isCompleted) {
-      notifySuccessListeners();
+      notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
       setTaskListener();
@@ -39,18 +39,18 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   Future<void> pause() async {
     if (!isCompleted && isRunning) {
       await tasks.first.pause();
-      notifyPauseListeners();
+      notifyPauseListeners(id);
     }
   }
 
   @override
   Future<void> resume() async {
     if (isCompleted) {
-      notifySuccessListeners();
+      notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
       setTaskListener();
-      notifyResumeListeners();
+      notifyResumeListeners(id);
       await tasks.first.resume();
 
     }
@@ -78,14 +78,14 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   }
 
   @override
-  Future<void> notifySuccessListeners([e]) async {
+  Future<void> notifySuccessListeners([e, id]) async {
     if (!isCompleted) {
-      notifyPartialSuccessListeners(tasks.first.id, e);
+      notifyPartialSuccessListeners(e, focusedTaskId);
       await moveToNext();
     } else {
       if (currentProgress < 100) {
         currentProgress = 100;
-        superNotifyProgressListeners(currentProgress);
+        superNotifyProgressListeners(currentProgress, id);
       }
       super.notifySuccessListeners();
       await moveToNext();
