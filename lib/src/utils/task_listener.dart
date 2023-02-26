@@ -2,7 +2,7 @@ import 'package:meta/meta.dart';
 
 abstract class LinkedTaskListener extends TaskListener {
   void onPartialSuccess([result, id]);
-  void onPartialError([e, id]);
+  void onPartialError(e, [id]);
 }
 
 class LinkedTaskListenerCallbacks extends LinkedTaskListener

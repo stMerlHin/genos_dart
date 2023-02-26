@@ -230,19 +230,19 @@ mixin LinkedTaskBody on TaskBody {
   Future<bool> moveToNext();
 
   @protected
-  Future<void> notifyPartialErrorListeners([id, e]) async {
+  Future<void> notifyPartialErrorListeners([e, id]) async {
     for (var element in listeners) {
       if (element is LinkedTaskListener) {
-        element.onPartialError(id, e);
+        element.onPartialError(e, id);
       }
     }
   }
 
   @protected
-  Future<void> notifyPartialSuccessListeners([id, value]) async {
+  Future<void> notifyPartialSuccessListeners([value, id]) async {
     for (var element in listeners) {
       if (element is LinkedTaskListener) {
-        element.onPartialSuccess(id, value);
+        element.onPartialSuccess(value, id);
       }
     }
   }
