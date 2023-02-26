@@ -30,7 +30,7 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
       notifySuccessListeners();
     } else if (!isRunning) {
       _canceled = false;
-      _setTaskListener();
+      setTaskListener();
       await tasks.first.run();
     }
   }
@@ -49,7 +49,7 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
       notifySuccessListeners();
     } else if (!isRunning) {
       _canceled = false;
-      _setTaskListener();
+      setTaskListener();
       notifyResumeListeners();
       await tasks.first.resume();
 
@@ -114,7 +114,8 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   @override
   bool get result => tasksLeft == 0 ? true : false;
 
-  void _setTaskListener() {
+  @protected
+  void setTaskListener() {
     tasks.first.setListener(
         onSuccess: notifySuccessListeners,
         onError: notifyErrorListeners,
