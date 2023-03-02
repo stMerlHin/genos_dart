@@ -16,7 +16,7 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
       notifyProgressListeners(100);
       notifySuccessListeners(task.result, id);
     } else if (!isRunning) {
-      _setTaskListener();
+      setTaskListener();
       await task.run();
     }
   }
@@ -27,7 +27,7 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
       notifyProgressListeners(100, id);
       notifySuccessListeners(task.result, id);
     } else if (!isRunning) {
-      _setTaskListener();
+      setTaskListener();
       await task.resume();
     }
   }
@@ -77,7 +77,8 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @override
   String get name => task.name;
 
-  void _setTaskListener() {
+  @protected
+  void setTaskListener() {
     task.setListener(
         onSuccess: notifySuccessListeners,
         onError: notifyErrorListeners,
@@ -213,6 +214,10 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
 
   void dispose(TaskListener observer) {
     listeners.removeWhere((element) => element == observer);
+  }
+
+  void disposeAll() {
+    listeners.clear();
   }
 
   @override

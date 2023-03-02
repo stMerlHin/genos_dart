@@ -31,7 +31,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
       notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
-      _setTaskListener();
+      setTaskListener();
       await tasksWrapper.first.run();
     }
   }
@@ -49,7 +49,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
       notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
-      _setTaskListener();
+      setTaskListener();
       await tasksWrapper.first.resume();
     }
   }
@@ -80,14 +80,14 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   Future<void> notifySuccessListeners([e, id]) async {
     if (!isCompleted) {
       notifyPartialSuccessListeners(e, focusedTaskId);
-      await moveToNext();
+      moveToNext();
     } else {
       if (currentProgress < 100) {
         currentProgress = 100;
         superNotifyProgressListeners(currentProgress, id);
       }
       super.notifySuccessListeners(e, id);
-      await moveToNext();
+      moveToNext();
     }
   }
 
@@ -116,7 +116,8 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @override
   bool get result => tasksLeft == 0 ? true : false;
 
-  void _setTaskListener() {
+  @protected
+  void setTaskListener() {
     if (!_listenerAdded) {
       tasksWrapper.first.addListener(this);
       _listenerAdded = true;
