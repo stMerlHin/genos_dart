@@ -3,8 +3,7 @@ import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 class LinkedTasksWrapper extends IdentifiedTaskRunner
-    with TaskBody, LinkedTaskBody
-    implements TaskListener {
+    with TaskBody, LinkedTaskBody, TaskListener {
   @protected
   final List<TaskWrapper> tasksWrapper;
   bool _listenerAdded = false;

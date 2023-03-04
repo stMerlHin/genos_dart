@@ -171,9 +171,12 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
 
   @protected
   Future<void> notifySuccessListeners([e, id]) async {
-    for (var element in listeners) {
-      element.onSuccess(e, id);
+    //Remove the disposed listeners
+    listeners.removeWhere((element) => element.disposed == true);
+    for (var e in listeners) {
+      e.onSuccess(e, id);
     }
+    _mayDisposeAll();
   }
 
   @protected
@@ -213,11 +216,18 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   }
 
   void dispose(TaskListener observer) {
-    listeners.removeWhere((element) => element == observer);
+    observer.disposed = true;
+    //listeners.removeWhere((element) => element == observer);
   }
 
   void disposeAll() {
     listeners.clear();
+  }
+
+  void _mayDisposeAll() {
+    if(listeners.where((element) => !element.disposed).isEmpty) {
+      disposeAll();
+    }
   }
 
   @override

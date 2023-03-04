@@ -1,14 +1,15 @@
 import 'package:meta/meta.dart';
 
-abstract class LinkedTaskListener extends TaskListener {
+mixin LinkedTaskListener implements TaskListener {
   void onPartialSuccess([result, id]);
   void onPartialError(e, [id]);
 }
 
-class LinkedTaskListenerCallbacks extends LinkedTaskListener
-    with TaskCallbacks {
+class LinkedTaskListenerCallbacks with LinkedTaskListener, TaskCallbacks {
   final void Function(dynamic, dynamic)? onPartialSuccessCalled;
   final void Function(dynamic, dynamic)? onPartialErrorCalled;
+  @override
+  bool disposed = false;
 
   LinkedTaskListenerCallbacks({
     required void Function([dynamic, dynamic]) onSuccessCalled,
@@ -39,9 +40,11 @@ class LinkedTaskListenerCallbacks extends LinkedTaskListener
   void onPartialSuccess([result, id]) {
     onPartialSuccessCalled?.call(result, id);
   }
+
 }
 
-abstract class TaskListener {
+mixin TaskListener {
+  bool disposed = false;
   void onSuccess([s, id]);
 
   void onProgress(int percent, [id]);
@@ -105,7 +108,7 @@ mixin TaskCallbacks on TaskListener {
   }
 }
 
-class TaskListenerCallbacks extends TaskListener with TaskCallbacks {
+class TaskListenerCallbacks with TaskListener, TaskCallbacks {
   TaskListenerCallbacks({
     required void Function([dynamic, dynamic]) onSuccessCalled,
     required void Function(dynamic, [dynamic]) onErrorCalled,
