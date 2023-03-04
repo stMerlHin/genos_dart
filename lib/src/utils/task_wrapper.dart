@@ -14,9 +14,9 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   Future<void> run() async {
     if (isCompleted) {
       notifyProgressListeners(100);
-      notifySuccessListeners(task.result);
+      notifySuccessListeners(task.result, id);
     } else if (!isRunning) {
-      _setTaskListener();
+      setTaskListener();
       await task.run();
     }
   }
@@ -24,10 +24,10 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @override
   Future<void> resume() async {
     if (isCompleted) {
-      notifyProgressListeners(100);
-      notifySuccessListeners(task.result);
+      notifyProgressListeners(100, id);
+      notifySuccessListeners(task.result, id);
     } else if (!isRunning) {
-      _setTaskListener();
+      setTaskListener();
       await task.resume();
     }
   }
@@ -36,7 +36,7 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   Future<void> pause() async {
     if (!isPaused) {
       await task.pause();
-      notifyPauseListeners();
+      notifyPauseListeners(id);
     }
   }
 
@@ -44,7 +44,7 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   Future<void> cancel() async {
     if (!isCanceled) {
       await task.cancel();
-      notifyCancelListeners();
+      notifyCancelListeners(id);
     }
   }
 
@@ -75,10 +75,10 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   get id => task.id;
 
   @override
-  // TODO: implement name
   String get name => task.name;
 
-  void _setTaskListener() {
+  @protected
+  void setTaskListener() {
     task.setListener(
         onSuccess: notifySuccessListeners,
         onError: notifyErrorListeners,
@@ -170,50 +170,64 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   }
 
   @protected
-  Future<void> notifySuccessListeners([e]) async {
+  Future<void> notifySuccessListeners([e, id]) async {
+    //Remove the disposed listeners
+    listeners.removeWhere((element) => element.disposed == true);
+    for (var e in listeners) {
+      e.onSuccess(e, id);
+    }
+    _mayDisposeAll();
+  }
+
+  @protected
+  Future<void> notifyErrorListeners([e, id]) async {
     for (var element in listeners) {
-      element.onSuccess(e);
+      element.onError(e, id);
     }
   }
 
   @protected
-  Future<void> notifyErrorListeners([e]) async {
-    for (var element in listeners) {
-      element.onError(e);
-    }
-  }
-
-  @protected
-  Future<void> notifyProgressListeners(int percent) async {
+  Future<void> notifyProgressListeners(int percent, [id]) async {
     currentProgress = percent;
     for (var element in listeners) {
-      element.onProgress(percent);
+      element.onProgress(percent, id);
     }
   }
 
   @protected
-  Future<void> notifyPauseListeners() async {
+  Future<void> notifyPauseListeners([id]) async {
     for (var element in listeners) {
-      element.onPause();
+      element.onPause(id);
     }
   }
 
   @protected
-  Future<void> notifyCancelListeners() async {
+  Future<void> notifyCancelListeners([id]) async {
     for (var element in listeners) {
-      element.onCancel();
+      element.onCancel(id);
     }
   }
 
   @protected
-  Future<void> notifyResumeListeners() async {
+  Future<void> notifyResumeListeners([id]) async {
     for (var element in listeners) {
-      element.onResume();
+      element.onResume([id]);
     }
   }
 
   void dispose(TaskListener observer) {
-    listeners.removeWhere((element) => element == observer);
+    observer.disposed = true;
+    //listeners.removeWhere((element) => element == observer);
+  }
+
+  void disposeAll() {
+    listeners.clear();
+  }
+
+  void _mayDisposeAll() {
+    if(listeners.where((element) => !element.disposed).isEmpty) {
+      disposeAll();
+    }
   }
 
   @override
@@ -231,33 +245,35 @@ mixin LinkedTaskBody on TaskBody {
   Future<bool> moveToNext();
 
   @protected
-  Future<void> notifyPartialErrorListeners([id, e]) async {
+  Future<void> notifyPartialErrorListeners([e, id]) async {
     for (var element in listeners) {
       if (element is LinkedTaskListener) {
-        element.onPartialError(id, e);
+        element.onPartialError(e, id);
       }
     }
   }
 
   @protected
-  Future<void> notifyPartialSuccessListeners([id, value]) async {
+  Future<void> notifyPartialSuccessListeners([value, id]) async {
     for (var element in listeners) {
       if (element is LinkedTaskListener) {
-        element.onPartialSuccess(id, value);
+        element.onPartialSuccess(value, id);
       }
     }
   }
 
   @override
-  Future<void> notifyProgressListeners(int percent) {
+  Future<void> notifyProgressListeners(int percent, [id]) {
     currentProgress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
         percent ~/ initialTaskCount;
-    return super.notifyProgressListeners(currentProgress);
+    return super.notifyProgressListeners(currentProgress, id);
   }
 
-  Future<void> superNotifyProgressListeners(int percent) {
-    return super.notifyProgressListeners(percent);
+  Future<void> superNotifyProgressListeners(int percent, [id]) {
+    return super.notifyProgressListeners(percent, id);
   }
 
   int get tasksLeft;
+
+  get focusedTaskId => currentTaskId;
 }
