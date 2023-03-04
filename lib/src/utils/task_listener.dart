@@ -1,6 +1,8 @@
 import 'package:meta/meta.dart';
 
 mixin LinkedTaskListener implements TaskListener {
+  @override
+  bool disposed = false;
   void onPartialSuccess([result, id]);
   void onPartialError(e, [id]);
 }
@@ -8,8 +10,6 @@ mixin LinkedTaskListener implements TaskListener {
 class LinkedTaskListenerCallbacks with LinkedTaskListener, TaskCallbacks {
   final void Function(dynamic, dynamic)? onPartialSuccessCalled;
   final void Function(dynamic, dynamic)? onPartialErrorCalled;
-  @override
-  bool disposed = false;
 
   LinkedTaskListenerCallbacks({
     required void Function([dynamic, dynamic]) onSuccessCalled,
