@@ -285,7 +285,7 @@ class DataListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(ChangeType) onChanged, {
+    void Function(DataChange) onChanged, {
     int reconnectionDelay = 1000,
     bool secure = true,
     bool refresh = false,
@@ -298,7 +298,7 @@ class DataListener {
   }
 
   void _create(
-      void Function(ChangeType) onChanged,
+      void Function(DataChange) onChanged,
       bool secure,
       void Function(String)? onError,
       void Function()? onDispose,
@@ -320,17 +320,32 @@ class DataListener {
         //do something once the connection is reestablished
       } else if (eventSink.event == 'registered') {
         if (refresh) {
-          onChanged(ChangeType.none);
+          onChanged(
+              DataChange(
+              changeType: ChangeType.none,
+                connectionId: eventSink.connectionId
+          )
+          );
         }
         //Change happens on the database
       } else {
         //The change is not made by this client so we notify him
         if (eventSink.connectionId != Genos.connectionId) {
-          onChanged(ChangeType.fromString(eventSink.event));
+          onChanged(
+              DataChange(
+              changeType: ChangeType.fromString(eventSink.event),
+                connectionId: eventSink.connectionId
+              )
+          );
           //the change is made by this client. We notify him because the
           //change subscription is reflexive
         } else if (reflexive) {
-          onChanged(ChangeType.fromString(eventSink.event));
+          onChanged(
+              DataChange (
+                  changeType: ChangeType.fromString(eventSink.event),
+                connectionId: eventSink.connectionId
+              )
+          );
         }
       }
     }, onError: (e) {
@@ -358,6 +373,16 @@ class DataListener {
     _closeByClient = true;
     _webSocket.sink.close();
   }
+}
+
+class DataChange {
+  final ChangeType changeType;
+  final String? connectionId;
+
+  DataChange({
+    required this.changeType,
+    required this.connectionId,
+});
 }
 
 enum ChangeType {
