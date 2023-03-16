@@ -368,6 +368,9 @@ class DataListener {
     });
   }
 
+
+  String get key => tag == null ? table : '$table/$tag';
+
   //Dispose the listener
   void dispose() {
     _closeByClient = true;
