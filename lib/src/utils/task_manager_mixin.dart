@@ -110,5 +110,5 @@ abstract class TaskManagerListener {
   void onAnyTaskResumed([id]) {}
   void onAnyError([e, id]) {}
   void onAnyCancel([id]) {}
-  void onAnyProgress(int percent, id) {}
+  void onAnyProgress(int percent, [id]) {}
 }
