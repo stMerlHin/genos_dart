@@ -256,7 +256,7 @@ class Genos {
 ///[source] is the string to transform
 ///[secure] tells if the link should use https protocol or http.
 ///     Default to true so https is used
-String linkify(String source, [bool secure = true]) {
+String linkify(String source, {bool secure = true}) {
   return '${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$source';
 }
 

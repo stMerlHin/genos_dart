@@ -80,9 +80,15 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @protected
   void setTaskListener() {
     task.setListener(
-        onSuccess: notifySuccessListeners,
-        onError: notifyErrorListeners,
-        onProgress: notifyProgressListeners);
+        onSuccess: (result) {
+          notifySuccessListeners(result, id);
+        },
+        onError: (e) {
+          notifyErrorListeners(e, id);
+        },
+        onProgress: (int percent) {
+          notifyProgressListeners(percent, id);
+        });
   }
 }
 
@@ -211,7 +217,7 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   @protected
   Future<void> notifyResumeListeners([id]) async {
     for (var element in listeners) {
-      element.onResume([id]);
+      element.onResume(id);
     }
   }
 

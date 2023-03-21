@@ -142,10 +142,8 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   }
 
   @override
-  // TODO: implement id
   get id => taskId;
 
   @override
-  // TODO: implement name
   String get name => taskName;
 }

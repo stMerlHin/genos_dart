@@ -6,7 +6,21 @@ import 'package:genos_dart/genos_dart.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  dudExample();
+  final d = DownloadTaskWrapper(
+      downloadTask: DownloadTask.resumeFromFile(
+          id: 1,
+          url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+          filePath: 'apolo11.pdf',
+          trustBadCertificate: true,
+          headers: {'app_signature': '${Auth.encodeBase64String(
+              '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+              3
+          )}'}
+        // )
+      )
+  );
+  d.addListener(LinkedTaskListenerCallbacks(onSuccessCalled: ([r, i]) {}, onErrorCalled: onErrorCalled))
+  //dudExample();
   //
   // String str = "CEci est le string";
   // String en = Auth.encodeBase64String(str);
@@ -215,7 +229,10 @@ void dudExample() async {
           url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
           filePath: 'apolo11.pdf',
           trustBadCertificate: true,
-          //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+          headers: {'app_signature': '${uth.encodeBase64String(
+              '91a2dbf0-292d-11ed-91f1-4f98460f463c',
+              3
+          )}'}
           // )
         )
     ),
@@ -239,6 +256,8 @@ void dudExample() async {
       // )
     )),
   ];
+
+  tas.first.addListener(TaskListenerCallbacks(onSuccessCalled: ([onSuccessCalled, i]) {}, onErrorCalled: ([id, i]){}));
 
   LinkedTasksWrapper wrapper = LinkedTasksWrapper(tas);
   wrapper.addListener(LinkedTaskListenerCallbacks(onSuccessCalled: ([value, id]) {

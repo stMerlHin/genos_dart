@@ -183,8 +183,6 @@ class DownloadTask extends Task {
             onError: (e) {
               downloadedFile.closeSync();
               paused = true;
-              print("io");
-              print(e);
               throw e;
             },
             cancelOnError: true,
