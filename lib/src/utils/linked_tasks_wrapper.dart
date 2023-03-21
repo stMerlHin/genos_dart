@@ -3,8 +3,7 @@ import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 class LinkedTasksWrapper extends IdentifiedTaskRunner
-    with TaskBody, LinkedTaskBody
-    implements TaskListener {
+    with TaskBody, LinkedTaskBody, TaskListener {
   @protected
   final List<TaskWrapper> tasksWrapper;
   bool _listenerAdded = false;
@@ -28,10 +27,10 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @override
   Future<void> run() async {
     if (isCompleted) {
-      notifySuccessListeners();
+      notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
-      _setTaskListener();
+      setTaskListener();
       await tasksWrapper.first.run();
     }
   }
@@ -46,10 +45,10 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @override
   Future<void> resume() async {
     if (isCompleted) {
-      notifySuccessListeners();
+      notifySuccessListeners(null, id);
     } else if (!isRunning) {
       _canceled = false;
-      _setTaskListener();
+      setTaskListener();
       await tasksWrapper.first.resume();
     }
   }
@@ -59,7 +58,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
     if (tasksWrapper.isNotEmpty && !isCompleted) {
       _canceled = true;
       await tasksWrapper.first.cancel();
-      notifyCancelListeners();
+      notifyCancelListeners(id);
     }
   }
 
@@ -77,17 +76,17 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   }
 
   @override
-  Future<void> notifySuccessListeners([e]) async {
+  Future<void> notifySuccessListeners([e, id]) async {
     if (!isCompleted) {
-      notifyPartialSuccessListeners(tasksWrapper.first.id, e);
-      await moveToNext();
+      notifyPartialSuccessListeners(e, focusedTaskId);
+      moveToNext();
     } else {
       if (currentProgress < 100) {
         currentProgress = 100;
-        superNotifyProgressListeners(currentProgress);
+        superNotifyProgressListeners(currentProgress, id);
       }
-      super.notifySuccessListeners();
-      await moveToNext();
+      super.notifySuccessListeners(e, id);
+      moveToNext();
     }
   }
 
@@ -116,7 +115,8 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @override
   bool get result => tasksLeft == 0 ? true : false;
 
-  void _setTaskListener() {
+  @protected
+  void setTaskListener() {
     if (!_listenerAdded) {
       tasksWrapper.first.addListener(this);
       _listenerAdded = true;
@@ -144,45 +144,43 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
 
   @protected
   @override
-  void onError([e]) {
-    notifyErrorListeners(e);
+  void onError([e, id]) {
+    notifyErrorListeners(e, id);
   }
 
   @protected
   @override
-  void onPause() {
-    notifyPauseListeners();
+  void onPause([id]) {
+    notifyPauseListeners(id);
   }
 
   @protected
   @override
-  void onProgress(int percent) {
-    notifyProgressListeners(percent);
+  void onProgress(int percent, [id]) {
+    notifyProgressListeners(percent, id);
   }
 
   @protected
   @override
-  void onResume() {
-    notifyResumeListeners();
+  void onResume([id]) {
+    notifyResumeListeners(id);
   }
 
   @protected
   @override
-  void onSuccess([s]) {
-    notifySuccessListeners(s);
+  void onSuccess([s, id]) {
+    notifySuccessListeners(s, id);
   }
 
   @protected
   @override
-  void onCancel() {
-    notifyCancelListeners();
+  void onCancel([id]) {
+    notifyCancelListeners(id);
   }
 
   @override
-  // TODO: implement name
   String get name => taskName;
 
   @override
-  // TODO: implement id
   get id => taskId;
 }
