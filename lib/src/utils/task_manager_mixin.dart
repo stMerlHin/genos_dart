@@ -5,9 +5,9 @@ import '../../genos_dart.dart';
 mixin TaskManagerMixin {
 
   @protected
-  static late List<TaskBody> tasks;
+  static List<TaskBody> tasks = [];
   @protected
-  static late List<TaskManagerListener> listeners;
+  static List<TaskManagerListener> listeners = [];
 
   @protected
   Future<void> addTask(TaskBody task) async {
