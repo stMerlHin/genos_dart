@@ -80,9 +80,15 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
   @protected
   void setTaskListener() {
     task.setListener(
-        onSuccess: notifySuccessListeners,
-        onError: notifyErrorListeners,
-        onProgress: notifyProgressListeners);
+        onSuccess: (result) {
+          notifySuccessListeners(result, id);
+        },
+        onError: (e) {
+          notifyErrorListeners(e, id);
+        },
+        onProgress: (int percent) {
+          notifyProgressListeners(percent, id);
+        });
   }
 }
 
@@ -171,10 +177,11 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
 
   @protected
   Future<void> notifySuccessListeners([e, id]) async {
+    print('CALLING TASK WRAPPER SUCCESS NOTIFIER');
     //Remove the disposed listeners
     listeners.removeWhere((element) => element.disposed == true);
-    for (var e in listeners) {
-      e.onSuccess(e, id);
+    for (var el in listeners) {
+      el.onSuccess(e, id);
     }
     _mayDisposeAll();
   }
@@ -211,7 +218,7 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   @protected
   Future<void> notifyResumeListeners([id]) async {
     for (var element in listeners) {
-      element.onResume([id]);
+      element.onResume(id);
     }
   }
 
