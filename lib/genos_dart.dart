@@ -17,4 +17,5 @@ export 'src/utils/linked_tasks_wrapper.dart';
 export 'src/utils/download_task_wrapper.dart';
 export 'src/utils/upload_task_wrapper.dart';
 export 'src/utils/task_listener.dart';
+export 'src/utils/data_listener_provider.dart';
 export 'src/model/result.dart';
