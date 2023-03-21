@@ -299,7 +299,7 @@ class Blobing with TaskManagerListener {
 }
 
 
-class DownloadTaskManager with LinkedTaskListener, TaskManagerMixin {
+class DownloadTaskManager with TaskManagerMixin {
   static final DownloadTaskManager _instance = DownloadTaskManager._();
   static bool _initialized = false;
 
