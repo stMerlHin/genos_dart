@@ -701,9 +701,7 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
     _onError = (e, [bool retry = true]) async {
       await _waitAndRetry(e: e, onError: onError, retry: retry);
     };
-    _onSuccess = (s) {
-      _onSuccess(s);
-    };
+    _onSuccess = _onSuccess;
     _onProgress = onProgress;
   }
 
