@@ -20,6 +20,7 @@ class LinkedTaskListenerCallbacks with LinkedTaskListener, TaskCallbacks {
     void Function([dynamic])? onPauseCalled,
     void Function([dynamic])? onResumeCalled,
     void Function([dynamic])? onCancelCalled,
+    bool autoDispose = false,
   }) {
     this.onSuccessCalled = onSuccessCalled;
     this.onErrorCalled = onErrorCalled;
@@ -27,6 +28,7 @@ class LinkedTaskListenerCallbacks with LinkedTaskListener, TaskCallbacks {
     this.onPauseCalled = onPauseCalled;
     this.onResumeCalled = onResumeCalled;
     this.onCancelCalled = onCancelCalled;
+    this.autoDispose = autoDispose;
   }
 
   @mustCallSuper
@@ -71,6 +73,9 @@ mixin TaskCallbacks on TaskListener {
 
   late final void Function([dynamic])? onCancelCalled;
 
+  @protected
+  bool autoDispose = false;
+
   @mustCallSuper
   @override
   void onCancel([id]) {
@@ -92,6 +97,9 @@ mixin TaskCallbacks on TaskListener {
   @mustCallSuper
   @override
   void onSuccess([s, id]) {
+    if(autoDispose) {
+      disposed = true;
+    }
     onSuccessCalled(s, id);
   }
 
@@ -116,6 +124,7 @@ class TaskListenerCallbacks with TaskListener, TaskCallbacks {
     void Function([dynamic])? onPauseCalled,
     void Function([dynamic])? onResumeCalled,
     void Function([dynamic])? onCancelCalled,
+    bool autoDispose = false,
   }) {
     this.onSuccessCalled = onSuccessCalled;
     this.onErrorCalled = onErrorCalled;
@@ -123,5 +132,6 @@ class TaskListenerCallbacks with TaskListener, TaskCallbacks {
     this.onPauseCalled = onPauseCalled;
     this.onResumeCalled = onResumeCalled;
     this.onCancelCalled = onCancelCalled;
+    this.autoDispose = autoDispose;
   }
 }
