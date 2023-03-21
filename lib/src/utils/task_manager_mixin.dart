@@ -104,7 +104,7 @@ mixin TaskManagerMixin {
 abstract class TaskManagerListener {
   void onNewTaskAdded(TaskBody task) {}
   void onAnyTaskDeleted([id]) {}
-  void onAnySuccess([result, id]);
+  void onAnySuccess([result, id]){}
   void onAnyTaskCanceled([id]) {}
   void onAnyTaskPaused([id]) {}
   void onAnyTaskResumed([id]) {}
