@@ -177,7 +177,6 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
 
   @protected
   Future<void> notifySuccessListeners([e, id]) async {
-    print('CALLING TASK WRAPPER SUCCESS NOTIFIER');
     //Remove the disposed listeners
     listeners.removeWhere((element) => element.disposed == true);
     for (var el in listeners) {

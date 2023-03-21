@@ -701,10 +701,7 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
     _onError = (e, [bool retry = true]) async {
       await _waitAndRetry(e: e, onError: onError, retry: retry);
     };
-    _onSuccess = (s) {
-      print('CALLING TASK ON SUCCESS');
-      onSuccess(s);
-    };
+    _onSuccess = onSuccess;
     _onProgress = onProgress;
   }
 
@@ -939,7 +936,6 @@ mixin TaskManagerMixin on LinkedTaskListener {
 
   @override
   void onSuccess([s, id]) {
-    print('CALLING THE ORIGINAL SUCCESS');
     _notifySuccessListener(s, id);
   }
 
