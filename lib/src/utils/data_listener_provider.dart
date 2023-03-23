@@ -44,7 +44,7 @@ abstract class BaseDataListenerProvider {
 
 class SingleListenerProvider {
   @protected
-  late final SingleListener? singleListener;
+  SingleListener? singleListener;
   @protected
   final List<SingleLowLevelDataListener> listeners = [];
   final SingleListenerProvider _instance = SingleListenerProvider._();
@@ -89,7 +89,7 @@ class SingleListenerProvider {
       if (listeners.isNotEmpty) {
         singleListener?.deleteSource(listener);
       } else {
-        singleListener?.dispose();
+        disposeAll();
       }
     }
   }
