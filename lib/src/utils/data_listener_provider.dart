@@ -51,9 +51,8 @@ class SingleListenerProvider {
 
   SingleListenerProvider._();
 
-  Future<SingleListenerProvider> get instance async => _instance;
+  static Future<SingleListenerProvider> get instance async => _instance;
 
-  @protected
   void addListener(
     SingleLowLevelDataListener listener, {
     bool secure = true,
