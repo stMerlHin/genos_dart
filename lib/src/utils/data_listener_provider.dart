@@ -47,7 +47,7 @@ class SingleListenerProvider {
   SingleListener? singleListener;
   @protected
   final List<SingleLowLevelDataListener> listeners = [];
-  final SingleListenerProvider _instance = SingleListenerProvider._();
+  static final SingleListenerProvider _instance = SingleListenerProvider._();
 
   SingleListenerProvider._();
 
