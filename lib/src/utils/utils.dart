@@ -221,4 +221,17 @@ extension StringUint8List on String {
   }
 }
 
+extension ListContentSplitExt on List {
+  String toSplitableString([String pattern = "/"]) {
+    if (isNotEmpty) {
+      String value = this[0];
+      for (int i = 1; i < length; i++) {
+        value += pattern + this[i].toString();
+      }
+      return value;
+    }
+    return "";
+  }
+}
+
 const String preferenceFile = '.gp';
