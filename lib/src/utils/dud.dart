@@ -45,7 +45,7 @@ class DownloadTask extends Task {
     taskName = name ?? '';
     this.retryCount = retryCount ?? 10;
     badCertificateCallback =
-        ((X509Certificate cert, String host, int port) => trustBadCertificate);
+    ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
   }
 
@@ -133,7 +133,7 @@ class DownloadTask extends Task {
       onSuccess(file.path);
     } else if (!isRunning) {
       final HttpClient httpClient =
-          getHttpClient(onBadCertificate: badCertificateCallback);
+      getHttpClient(onBadCertificate: badCertificateCallback);
 
       resetRetryingCount();
 
@@ -167,7 +167,7 @@ class DownloadTask extends Task {
           var downloadedFile = file.openSync(mode: fileMode);
 
           _subscription = httpResponse.listen(
-            (data) {
+                (data) {
               _downloadedByte += data.length;
 
               downloadedFile.writeFromSync(data);
@@ -187,9 +187,9 @@ class DownloadTask extends Task {
             },
             cancelOnError: true,
           )..onError((e) async {
-              paused = true;
-              await onError('Connection error');
-            });
+            paused = true;
+            await onError('Connection error');
+          });
         } else {
           paused = true;
           await onError(await Task.responseAsString(httpResponse), false);
@@ -289,7 +289,7 @@ class UploadTask extends Task {
     this.retryDelay = retryDelay ?? const Duration(seconds: 2);
     this.retryCount = retryCount;
     badCertificateCallback =
-        ((X509Certificate cert, String host, int port) => trustBadCertificate);
+    ((X509Certificate cert, String host, int port) => trustBadCertificate);
     this.headers = headers;
   }
 
@@ -363,7 +363,7 @@ class UploadTask extends Task {
     try {
       final httpClient = _getHttpClient(
           onBadCertificate: ((X509Certificate cert, String host, int port) =>
-              true));
+          true));
 
       request = await httpClient.postUrl(Uri.parse(url));
 
@@ -440,7 +440,7 @@ class UploadTask extends Task {
     final url = destination;
     final httpClient = _getHttpClient(
         onBadCertificate: ((X509Certificate cert, String host, int port) =>
-            true));
+        true));
     try {
       final request = await httpClient.postUrl(Uri.parse(url));
 
@@ -457,7 +457,7 @@ class UploadTask extends Task {
       //     filename: fileUtil.basename(file.path));
 
       http.MultipartRequest requestMultipart =
-          http.MultipartRequest("POST", Uri.parse(url));
+      http.MultipartRequest("POST", Uri.parse(url));
 
       requestMultipart.files.add(multipart);
 
@@ -665,8 +665,8 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
 
   Future<void> _waitAndRetry(
       {required dynamic e,
-      required CompletedTaskCallback onError,
-      bool retry = true}) async {
+        required CompletedTaskCallback onError,
+        bool retry = true}) async {
     await Future.delayed(retryDelay, () async {
       await _retry(e: e, onError: onError, retry: retry);
     });
@@ -674,8 +674,8 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
 
   Future<void> _retry(
       {required dynamic e,
-      required CompletedTaskCallback onError,
-      bool retry = true}) async {
+        required CompletedTaskCallback onError,
+        bool retry = true}) async {
     if (retry && retryCountLeft > 0 && retryCount > 0 && !canceled) {
       retryCountLeft--;
       retrying = true;
@@ -696,15 +696,12 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
   //It must be call before run and resume to not miss events
   void setListener(
       {required CompletedTaskCallback onSuccess,
-      required CompletedTaskCallback onError,
-      TaskProgressCallback? onProgress}) async {
+        required CompletedTaskCallback onError,
+        TaskProgressCallback? onProgress}) async {
     _onError = (e, [bool retry = true]) async {
       await _waitAndRetry(e: e, onError: onError, retry: retry);
     };
-    _onSuccess = (s) {
-      print('CALLING TASK ON SUCCESS');
-      onSuccess(s);
-    };
+    _onSuccess = onSuccess;
     _onProgress = onProgress;
   }
 
@@ -730,7 +727,7 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
   fileGetAllMock() {
     return List.generate(
       20,
-      (i) => GUpDownMod(
+          (i) => GUpDownMod(
           fileName: 'filename $i.jpg',
           dateModified: DateTime.now().add(Duration(minutes: i)),
           size: i * 1000),
@@ -807,10 +804,10 @@ class GUpDownMod {
   }
 
   Map<String, dynamic> toJson() => {
-        "fileName": fileName,
-        "dateModified": dateModified,
-        "size": size,
-      };
+    "fileName": fileName,
+    "dateModified": dateModified,
+    "size": size,
+  };
 }
 
 Future<String> responseAsString(HttpClientResponse response) {
@@ -820,148 +817,4 @@ Future<String> responseAsString(HttpClientResponse response) {
     contents.write(data);
   }, onDone: () => completer.complete(contents.toString()));
   return completer.future;
-}
-
-
-mixin TaskManagerMixin on LinkedTaskListener {
-
-  @protected
-  static late List<TaskBody> tasks;
-  @protected
-  static late List<TaskManagerListener> listeners;
-
-  @protected
-  Future<void> addTask(TaskBody task) async {
-    task.addListener(this);
-    tasks.insert(0, task);
-    _notifyAddListener(task);
-    await task.run();
-  }
-
-  void addListener(TaskManagerListener listener) {
-    listeners.add(listener);
-  }
-
-  void _notifyAddListener(TaskBody task) {
-    for (var element in listeners) {
-      element.onNewTaskAdded(task);
-    }
-  }
-
-  void _notifyProgressListener(int percent, [id]) {
-    for (var element in listeners) {
-      element.onAnyProgress(percent, id);
-    }
-  }
-
-  void _notifyErrorListener([e, id]) {
-    for (var element in listeners) {
-      element.onAnyError(e, id);
-    }
-  }
-
-  void _notifyCancelListener([id]) {
-    for (var element in listeners) {
-      element.onAnyCancel(id);
-    }
-  }
-
-  void _notifyResumeListener([id]) {
-    for (var element in listeners) {
-      element.onAnyTaskResumed(id);
-    }
-  }
-
-  void _notifySuccessListener([s, id]) {
-    for (var element in listeners) {
-      element.onAnySuccess(s, id);
-    }
-    tasks.removeWhere((element) {
-      if (element.isCompleted) {
-        element.dispose(this);
-        return true;
-      }
-      return false;
-    });
-    _notifyDeleteListener(id);
-  }
-
-  void _notifyPausedListener([id]) {
-    for (var element in listeners) {
-      element.onAnyTaskPaused(id);
-    }
-  }
-
-  void _notifyDeleteListener([id]) {
-    for (var element in listeners) {
-      element.onAnyTaskDeleted(id);
-    }
-  }
-
-  void dispose(TaskManagerListener listener) {
-    listeners.remove(listener);
-  }
-
-  @override
-  void onCancel([id]) {
-    _notifyCancelListener(id);
-  }
-
-  @override
-  void onError([e, id]) {
-    //print(e);
-    _notifyErrorListener([e, id]);
-  }
-
-  @override
-  void onPartialError([e, id]) {
-    // TODO: implement onPartialError
-  }
-
-  @override
-  void onPartialSuccess([result, id]) {
-  }
-
-  @override
-  void onPause([id]) {
-    _notifyPausedListener(id);
-  }
-
-  @override
-  void onProgress(int percent, [id]) {
-    _notifyProgressListener(percent, id);
-  }
-
-  @override
-  void onResume([id]) {
-    _notifyResumeListener(id);
-  }
-
-  @override
-  void onSuccess([s, id]) {
-    print('CALLING THE ORIGINAL SUCCESS');
-    _notifySuccessListener(s, id);
-  }
-
-  void deleteTask(TaskBody task) {
-    if (tasks.remove(task)) {
-      _notifyDeleteListener((task as IdentifiedTaskRunner).id);
-    }
-  }
-
-
-  List<TaskBody> get allTasks => tasks;
-}
-
-
-abstract class TaskManagerListener {
-  void onNewTaskAdded(TaskBody task) {}
-  void onAnyTaskDeleted([id]) {}
-  void onAnySuccess([result, id]);
-  void onAnyTaskCanceled([id]) {}
-  void onAnyTaskPaused([id]) {}
-  void onAnyTaskResumed([id]) {}
-  void onAnyError([e, id]) {}
-  void onAnyCancel([id]) {}
-  void onAnyProgress(int percent, id) {}
 }
