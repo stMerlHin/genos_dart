@@ -368,7 +368,7 @@ class SingleListener {
 
   bool _closeByClient = false;
   //List<String> tables;
-  Map<String, List<String?>> tags = {};
+  Map<String, List<String>> tags = {};
   late int _reconnectionDelay;
 
   static DateTime? _lastKnownServerDate;

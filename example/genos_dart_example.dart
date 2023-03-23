@@ -6,6 +6,7 @@ import 'package:genos_dart/genos_dart.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
+  print("".split('/'));
   //dudExample();
   //
   // String str = "CEci est le string";
