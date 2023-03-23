@@ -105,16 +105,11 @@ class Genos {
   static Genos get instance => _instance;
   static int get tour => _tour;
   static String get encryptionKey => _encryptionKey;
-  static String get appSignature => Auth.encodeBase64String(
-      _appSignature,
-      _tour
-  );
+  static String get appSignature =>
+      Auth.encodeBase64String(_appSignature, _tour);
 
-  static String get appWsSignature => Auth.encodeBase64String(
-      _appWsSignature,
-      _tour
-  );
-
+  static String get appWsSignature =>
+      Auth.encodeBase64String(_appWsSignature, _tour);
 
   static String get appPrivateDirectory => _privateDirectory;
   static String get connectionId => _connectionId;
@@ -307,7 +302,7 @@ class DataListener {
     _webSocket = createChannel('db/listen', secure);
     _webSocket.sink.add(_toJson());
     _webSocket.stream.listen((event) {
-      EventSink eventSink = EventSink.fromJson(event);
+      DataEventSink eventSink = DataEventSink.fromJson(event);
       //We store the server datetime
       _lastKnownServerDate = eventSink.dateTime;
       //The connection have be close by the server due to duplicate listening
@@ -320,32 +315,23 @@ class DataListener {
         //do something once the connection is reestablished
       } else if (eventSink.event == 'registered') {
         if (refresh) {
-          onChanged(
-              DataChange(
+          onChanged(DataChange(
               changeType: ChangeType.none,
-                connectionId: eventSink.connectionId
-          )
-          );
+              connectionId: eventSink.connectionId,
+              tag: eventSink.tag,
+              table: eventSink.table));
         }
         //Change happens on the database
       } else {
-        //The change is not made by this client so we notify him
-        if (eventSink.connectionId != Genos.connectionId) {
-          onChanged(
-              DataChange(
+        //we notify him
+        if (reflexive || eventSink.connectionId != Genos.connectionId) {
+          onChanged(DataChange(
               changeType: ChangeType.fromString(eventSink.event),
-                connectionId: eventSink.connectionId
-              )
-          );
+              connectionId: eventSink.connectionId,
+              tag: eventSink.tag,
+              table: eventSink.table));
           //the change is made by this client. We notify him because the
           //change subscription is reflexive
-        } else if (reflexive) {
-          onChanged(
-              DataChange (
-                  changeType: ChangeType.fromString(eventSink.event),
-                connectionId: eventSink.connectionId
-              )
-          );
         }
       }
     }, onError: (e) {
@@ -368,7 +354,6 @@ class DataListener {
     });
   }
 
-
   String get key => tag == null ? table : '$table/$tag';
 
   //Dispose the listener
@@ -378,14 +363,159 @@ class DataListener {
   }
 }
 
+class SingleListener {
+  late WebSocketChannel _webSocket;
+
+  bool _closeByClient = false;
+  //List<String> tables;
+  Map<String, List<String?>> tags = {};
+  late int _reconnectionDelay;
+
+  static DateTime? _lastKnownServerDate;
+
+  SingleListener({required this.tags});
+
+  static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
+
+  void listen(
+    void Function(DataChange) onChanged, {
+    int reconnectionDelay = 1000,
+    bool secure = true,
+    bool refresh = false,
+    bool reflexive = false,
+    void Function(String)? onError,
+    void Function()? onDispose,
+  }) {
+    _reconnectionDelay = reconnectionDelay;
+    _create(onChanged, secure, onError, onDispose, refresh, reflexive);
+  }
+
+  void _create(
+      void Function(DataChange) onChanged,
+      bool secure,
+      void Function(String)? onError,
+      void Function()? onDispose,
+      bool refresh,
+      bool reflexive) {
+    if (tags.isNotEmpty) {
+      _webSocket = createChannel('db/single/listen', secure);
+      _webSocket.sink.add(_toJson());
+      _webSocket.stream.listen((event) {
+        DataEventSink eventSink = DataEventSink.fromJson(event);
+        //We store the server datetime
+        _lastKnownServerDate = eventSink.dateTime;
+        //The connection have be close by the server due to duplicate listening
+        if (eventSink.event == 'close') {
+          dispose();
+          onDispose?.call();
+          //The connection have been closed due to connection issue
+          //At this level, change can be made on the database during
+          //the reconnection phase so we call [onChanged] to make user
+          //do something once the connection is reestablished
+        } else if (eventSink.event == 'registered') {
+          if (refresh) {
+            onChanged(DataChange(
+                changeType: ChangeType.none,
+                connectionId: eventSink.connectionId,
+                tag: eventSink.tag,
+                table: eventSink.table));
+          }
+          //Change happens on the database
+        } else {
+          //we notify him
+          if (reflexive || eventSink.connectionId != Genos.connectionId) {
+            onChanged(DataChange(
+                changeType: ChangeType.fromString(eventSink.event),
+                connectionId: eventSink.connectionId,
+                tag: eventSink.tag,
+                table: eventSink.table));
+            //the change is made by this client. We notify him because the
+            //change subscription is reflexive
+          }
+        }
+      }, onError: (e) {
+        onError?.call(e.toString());
+      }).onDone(() {
+        if (!_closeByClient) {
+          Timer(Duration(milliseconds: _reconnectionDelay), () {
+            _create(onChanged, secure, onError, onDispose, true, reflexive);
+          });
+        }
+      });
+    }
+  }
+
+  void addSource(SingleLowLevelDataListener listener) {
+    bool shouldSink = false;
+    if (!tags.keys.contains(listener.table)) {
+      shouldSink = true;
+      tags[listener.table] = [listener.tagsValue];
+      // if(listener.key != null && listener.key!.trim().isNotEmpty) {
+      //   tags ??= {};
+      //   tags![listener.table] = [listener.key!];
+      // }
+    } else if (!tags[listener.table]!.contains(listener.tagsValue)) {
+      tags[listener.table]!.add(listener.tagsValue);
+      shouldSink = true;
+    }
+
+    if (shouldSink) {
+      _webSocket.sink.add(_toJson(update: true));
+    }
+  }
+
+  void deleteSource(SingleLowLevelDataListener listener) {
+    if (tags.isNotEmpty) {
+      if (tags[listener.table] != null &&
+          tags[listener.table]!.contains(listener.tagsValue)) {
+        tags[listener.table]!
+            .removeWhere((element) => element == listener.tagsValue);
+        if (tags[listener.table]!.isEmpty) {
+          tags.remove(listener.table);
+          if (tags.isEmpty) {
+            //No element provided so we dispose the listener
+            dispose();
+          } else {
+            _webSocket.sink.add(_toJson(update: true));
+          }
+        }
+      }
+    }
+  }
+
+  String _toJson({bool? update}) {
+    return jsonEncode({
+      gAppWsKey: Genos.appWsSignature,
+      gConnectionId: Genos.connectionId,
+      gTags: tags,
+      gUpdate: update,
+    });
+  }
+
+  static String tagFromList(List<String> tags, {String pattern = '/'}) {
+    return tags.toSplitableString(pattern);
+  }
+
+  //Dispose the listener
+  void dispose() {
+    _closeByClient = true;
+    tags.clear();
+    _webSocket.sink.close();
+  }
+}
+
 class DataChange {
   final ChangeType changeType;
+  final String? table;
+  final String? tag;
   final String? connectionId;
 
   DataChange({
     required this.changeType,
     required this.connectionId,
-});
+    required this.table,
+    required this.tag,
+  });
 }
 
 enum ChangeType {
