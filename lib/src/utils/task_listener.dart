@@ -42,7 +42,6 @@ class LinkedTaskListenerCallbacks with LinkedTaskListener, TaskCallbacks {
   void onPartialSuccess([result, id]) {
     onPartialSuccessCalled?.call(result, id);
   }
-
 }
 
 mixin TaskListener {
@@ -97,7 +96,7 @@ mixin TaskCallbacks on TaskListener {
   @mustCallSuper
   @override
   void onSuccess([s, id]) {
-    if(autoDispose) {
+    if (autoDispose) {
       disposed = true;
     }
     onSuccessCalled(s, id);
