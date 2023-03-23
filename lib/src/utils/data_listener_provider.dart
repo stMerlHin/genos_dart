@@ -51,7 +51,7 @@ class SingleListenerProvider {
 
   SingleListenerProvider._();
 
-  Future<void> get instance async => _instance;
+  Future<SingleListenerProvider> get instance async => _instance;
 
   @protected
   void addListener(
@@ -102,7 +102,7 @@ class SingleListenerProvider {
 
 abstract class DataListenerAction {
   String get table;
-  String? get key;
+  String get key;
   void notify(DataChange dataChange);
 }
 
@@ -110,13 +110,13 @@ mixin LowLevelDataListener implements DataListenerAction {
   String? get tag;
 
   @override
-  String? get key => tag == null ? table : '$table/$tag';
+  String get key => tag == null ? table : '$table/$tag';
 }
 
 mixin SingleLowLevelDataListener implements DataListenerAction {
   List<String?> get tags;
 
   @override
-  String? get key => '$table/${tags.toSplitableString()}';
-  String? get tagsValue => tags.toSplitableString();
+  String get key => '$table/${tags.toSplitableString()}';
+  String get tagsValue => tags.toSplitableString();
 }
