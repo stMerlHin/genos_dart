@@ -79,16 +79,13 @@ abstract class TaskWrapper extends IdentifiedTaskRunner with TaskBody {
 
   @protected
   void setTaskListener() {
-    task.setListener(
-        onSuccess: (result) {
-          notifySuccessListeners(result, id);
-        },
-        onError: (e) {
-          notifyErrorListeners(e, id);
-        },
-        onProgress: (int percent) {
-          notifyProgressListeners(percent, id);
-        });
+    task.setListener(onSuccess: (result) {
+      notifySuccessListeners(result, id);
+    }, onError: (e) {
+      notifyErrorListeners(e, id);
+    }, onProgress: (int percent) {
+      notifyProgressListeners(percent, id);
+    });
   }
 }
 
@@ -231,7 +228,7 @@ mixin TaskBody on TaskRunner implements TaskStateNotifier {
   }
 
   void _mayDisposeAll() {
-    if(listeners.where((element) => !element.disposed).isEmpty) {
+    if (listeners.where((element) => !element.disposed).isEmpty) {
       disposeAll();
     }
   }
@@ -270,8 +267,9 @@ mixin LinkedTaskBody on TaskBody {
 
   @override
   Future<void> notifyProgressListeners(int percent, [id]) {
-    currentProgress = (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
-        percent ~/ initialTaskCount;
+    currentProgress =
+        (((initialTaskCount - tasksLeft) * 100) ~/ initialTaskCount) +
+            percent ~/ initialTaskCount;
     return super.notifyProgressListeners(currentProgress, id);
   }
 

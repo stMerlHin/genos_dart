@@ -6,8 +6,7 @@ import 'package:genos_dart/genos_dart.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  Blobing b = Blobing();
-  await b.brr();
+  print("".split('/'));
   //dudExample();
   //
   // String str = "CEci est le string";
@@ -210,144 +209,35 @@ void main() async {
 }
 
 class MediathecDownloadTaskWrapper extends DownloadTaskWrapper {
-
   final bool? provider;
 
-  MediathecDownloadTaskWrapper({required super.downloadTask,
-    this.provider
-  }) {
-    if(provider != null) {
-      addListener(
-          TaskListenerCallbacks(
-              onSuccessCalled: ([result, id]) {
-              },
-              onErrorCalled: ([error, id]) {
-
-              }
-          )
-      );
+  MediathecDownloadTaskWrapper({required super.downloadTask, this.provider}) {
+    if (provider != null) {
+      addListener(TaskListenerCallbacks(
+          onSuccessCalled: ([result, id]) {}, onErrorCalled: ([error, id]) {}));
     }
   }
-
-
 }
 
-class Blobing with TaskManagerListener {
-  DownloadTaskManager? h;
-  Future<void> brr() async {
-    h = await DownloadTaskManager.instance;
-    h!.addListener(this);
-    h!.add(MediathecDownloadTaskWrapper(
-        downloadTask: DownloadTask.resumeFromFile(
-            id: 1,
-            url: 'http://localhost/download/K.N.O.W/mediathec/1b8222d0-c38a-11ed-837a-b9ab39af0725.pdf',
-            filePath: 'bling.pdf',
-            trustBadCertificate: true,
-            headers: {'app_signature': '${Auth.encodeBase64String(
-                '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-                3
-            )}'}
-          // )
-        )
-    ));
-  }
-
-  @override
-  void onAnyCancel([id]) {
-    // TODO: implement onAnyCancel
-  }
-
-  @override
-  void onAnyError([e, id]) {
-    // TODO: implement onAnyError
-  }
-
-  @override
-  void onAnyProgress(int percent, id) {
-    print('any progress');
-  }
-
-  @override
-  void onAnySuccess([result, id]) {
-    print('ANY SUCCESS');
-  }
-
-  @override
-  void onAnyTaskCanceled([id]) {
-    // TODO: implement onAnyTaskCanceled
-  }
-
-  @override
-  void onAnyTaskDeleted([id]) {
-    // TODO: implement onAnyTaskDeleted
-  }
-
-  @override
-  void onAnyTaskPaused([id]) {
-    // TODO: implement onAnyTaskPaused
-  }
-
-  @override
-  void onAnyTaskResumed([id]) {
-    // TODO: implement onAnyTaskResumed
-  }
-
-  @override
-  void onNewTaskAdded(TaskBody task) {
-    // TODO: implement onNewTaskAdded
-  }
-}
-
-
-class DownloadTaskManager with TaskManagerMixin {
-  static final DownloadTaskManager _instance = DownloadTaskManager._();
-  static bool _initialized = false;
-
-  DownloadTaskManager._();
-
-  static Future<DownloadTaskManager> get instance async {
-    if (!_initialized) {
-      TaskManagerMixin.tasks = [];
-      TaskManagerMixin.listeners = [];
-      _initialized = true;
-    }
-    return _instance;
-  }
-
-  Future<void> add(DownloadTaskWrapper task) {
-    return super.addTask(task);
-  }
-
-  @override
-  List<DownloadTaskWrapper> get allTasks => TaskManagerMixin.tasks
-      .whereType<DownloadTaskWrapper>().toList();
-
-}
 void dudExample() async {
   List<DownloadTaskWrapper> tas = [
     DownloadTaskWrapper(
         downloadTask: DownloadTask.resumeFromFile(
-          id: 1,
-          url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
-          filePath: 'apolo11.pdf',
-          trustBadCertificate: true,
-          headers: {'app_signature': '${Auth.encodeBase64String(
-              '91a2dbf0-292d-11ed-91f1-4f98460f463c',
-              3
-          )}'}
-          // )
-        )
-    ),
+      id: 1,
+      url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+      filePath: 'apolo11.pdf',
+      trustBadCertificate: true,
+      // )
+    )),
     DownloadTaskWrapper(
         downloadTask: DownloadTask.resumeFromFile(
-          id: 2,
-          url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
-          filePath: 'apolo12.pdf',
-          trustBadCertificate: true,
-          //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
-          // )
-        )
-    ),
+      id: 2,
+      url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+      filePath: 'apolo12.pdf',
+      trustBadCertificate: true,
+      //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+      // )
+    )),
     DownloadTaskWrapper(
         downloadTask: DownloadTask.resumeFromFile(
       id: 3,
@@ -359,10 +249,12 @@ void dudExample() async {
     )),
   ];
 
-  tas.first.addListener(TaskListenerCallbacks(onSuccessCalled: ([onSuccessCalled, i]) {}, onErrorCalled: ([id, i]){}));
+  tas.first.addListener(TaskListenerCallbacks(
+      onSuccessCalled: ([onSuccessCalled, i]) {}, onErrorCalled: ([id, i]) {}));
 
   LinkedTasksWrapper wrapper = LinkedTasksWrapper(tas);
-  wrapper.addListener(LinkedTaskListenerCallbacks(onSuccessCalled: ([value, id]) {
+  wrapper
+      .addListener(LinkedTaskListenerCallbacks(onSuccessCalled: ([value, id]) {
     print('SUCCESS CALLED');
   }, onErrorCalled: (str, [id]) {
     print('ON ERROR');

@@ -3,25 +3,22 @@ import 'package:meta/meta.dart';
 import '../../genos_dart.dart';
 
 mixin TaskManagerMixin {
-
   @protected
-  static late List<TaskBody> tasks;
+  static final List<TaskBody> tasks = [];
   @protected
-  static late List<TaskManagerListener> listeners;
+  static final List<TaskManagerListener> listeners = [];
 
   @protected
   Future<void> addTask(TaskBody task) async {
-    task.addListener(
-        LinkedTaskListenerCallbacks(
-          autoDispose: true,
-          onSuccessCalled: _notifySuccessListener,
-          onErrorCalled: _notifyErrorListener,
-          onPauseCalled: _notifyPausedListener,
-          onResumeCalled: _notifyResumeListener,
-          onProgressCalled: _notifyProgressListener,
-          onCancelCalled: _notifyCancelListener,
-        )
-    );
+    task.addListener(LinkedTaskListenerCallbacks(
+      autoDispose: true,
+      onSuccessCalled: _notifySuccessListener,
+      onErrorCalled: _notifyErrorListener,
+      onPauseCalled: _notifyPausedListener,
+      onResumeCalled: _notifyResumeListener,
+      onProgressCalled: _notifyProgressListener,
+      onCancelCalled: _notifyCancelListener,
+    ));
     tasks.insert(0, task);
     _notifyAddListener(task);
     await task.run();
@@ -96,19 +93,17 @@ mixin TaskManagerMixin {
     }
   }
 
-
   List<TaskBody> get allTasks => tasks;
 }
-
 
 abstract class TaskManagerListener {
   void onNewTaskAdded(TaskBody task) {}
   void onAnyTaskDeleted([id]) {}
-  void onAnySuccess([result, id]);
+  void onAnySuccess([result, id]) {}
   void onAnyTaskCanceled([id]) {}
   void onAnyTaskPaused([id]) {}
   void onAnyTaskResumed([id]) {}
   void onAnyError([e, id]) {}
   void onAnyCancel([id]) {}
-  void onAnyProgress(int percent, id) {}
+  void onAnyProgress(int percent, [id]) {}
 }

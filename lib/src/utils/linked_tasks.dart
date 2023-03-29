@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import '../../genos_dart.dart';
 
 class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
-
   @protected
   final List<Task> tasks;
   bool _canceled = false;
@@ -13,10 +12,11 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
   @protected
   late String taskName;
 
-  LinkedTasks(this.tasks, {
+  LinkedTasks(
+    this.tasks, {
     String name = '',
     dynamic id,
-}) {
+  }) {
     listeners = [];
     initialTaskCount = tasks.length;
     currentTaskId = tasks.isNotEmpty ? tasks.first.id : '';
@@ -52,7 +52,6 @@ class LinkedTasks extends IdentifiedTaskRunner with TaskBody, LinkedTaskBody {
       setTaskListener();
       notifyResumeListeners(id);
       await tasks.first.resume();
-
     }
   }
 

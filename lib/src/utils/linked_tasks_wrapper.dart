@@ -13,7 +13,8 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   @protected
   late dynamic taskId;
 
-  LinkedTasksWrapper(this.tasksWrapper, {
+  LinkedTasksWrapper(
+    this.tasksWrapper, {
     String name = '',
     dynamic id,
   }) {
@@ -105,8 +106,7 @@ class LinkedTasksWrapper extends IdentifiedTaskRunner
   }
 
   @override
-  bool get isCompleted =>
-      tasksWrapper.isEmpty || tasksWrapper.last.isCompleted;
+  bool get isCompleted => tasksWrapper.isEmpty || tasksWrapper.last.isCompleted;
 
   @override
   int get tasksLeft =>
