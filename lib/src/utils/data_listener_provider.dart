@@ -47,13 +47,12 @@ class SingleListenerProvider {
   SingleListener? singleListener;
   @protected
   final List<SingleLowLevelDataListener> listeners = [];
-  final SingleListenerProvider _instance = SingleListenerProvider._();
+  static final SingleListenerProvider _instance = SingleListenerProvider._();
 
   SingleListenerProvider._();
 
-  Future<SingleListenerProvider> get instance async => _instance;
+  static Future<SingleListenerProvider> get instance async => _instance;
 
-  @protected
   void addListener(
     SingleLowLevelDataListener listener, {
     bool secure = true,
