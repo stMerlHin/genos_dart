@@ -19,6 +19,7 @@ class Genos {
   static late final String _appWsSignature;
   static late final Auth auth;
   static bool _initialized = false;
+  static bool autoLogOut = false;
   late Function(Genos) _onInitialization;
   late Function()? _onLoginOut;
   late Function(Map<String, String>) _onConfigChanged;
@@ -51,6 +52,7 @@ class Genos {
     Function()? onUserLoggedOut,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
+    bool autoLogOut = false,
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
@@ -61,6 +63,7 @@ class Genos {
       _appSignature = appSignature;
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
+      autoLogOut = autoLogOut;
       auth = await Auth.instance;
       auth.addLoginListener(_onUserLoggedOut);
 
@@ -309,6 +312,16 @@ class DataListener {
       if (eventSink.event == 'close') {
         dispose();
         onDispose?.call();
+
+      } else if(eventSink.event == 'unauthenticated') {
+        onError?.call('unauthenticated');
+        dispose();
+        onDispose?.call();
+
+        if(Genos.autoLogOut) {
+          Genos.auth.logOut();
+        }
+
         //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
@@ -347,7 +360,7 @@ class DataListener {
 
   String _toJson() {
     return jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
+      gAuthorizationBearer: Genos.auth.user!.jwt,
       gConnectionId: Genos.connectionId,
       gTable: table,
       gTag: tag,
@@ -408,6 +421,14 @@ class SingleListener {
         if (eventSink.event == 'close') {
           dispose();
           onDispose?.call();
+
+        } else if(eventSink.event == 'unauthenticated') {
+          onError?.call('unauthenticated');
+          dispose();
+          onDispose?.call();
+          if(Genos.autoLogOut) {
+            Genos.auth.logOut();
+          }
           //The connection have been closed due to connection issue
           //At this level, change can be made on the database during
           //the reconnection phase so we call [onChanged] to make user
@@ -485,7 +506,7 @@ class SingleListener {
 
   String _toJson({bool? update}) {
     return jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
+      gJwt: Genos.auth.user!.jwt,
       gConnectionId: Genos.connectionId,
       gTags: tags,
       gUpdate: update,
@@ -683,7 +704,7 @@ class GDirectRequest {
 
   String _toJson() {
     return jsonEncode({
-      gAppSignature: Genos.appSignature,
+      //gAppSignature: Genos.appSignature,
       gConnectionId: connectionId,
       gTable: table,
       gDateTimeEnable: dateTimeValueEnabled,
@@ -705,6 +726,7 @@ class GDirectRequest {
       final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
+            'Authorization': 'Bearer'
             //'origin': 'http://localhost'
           },
           body: _toJson());
@@ -718,6 +740,9 @@ class GDirectRequest {
         }
       } else {
         onError(RequestError(message: response.body.toString(), code: 200));
+        if(Genos.autoLogOut) {
+          Genos.auth.logOut();
+        }
       }
     } catch (e) {
       onError(RequestError(message: e.toString(), code: 400));

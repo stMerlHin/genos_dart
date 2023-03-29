@@ -8,6 +8,7 @@ class User {
   final int? phoneNumber;
   final String? uid;
   final String? password;
+  final String jwt;
   final String appLocalization;
   final AuthenticationMode authMode;
 
@@ -18,6 +19,7 @@ class User {
     this.appLocalization = 'fr',
     this.uid,
     this.password,
+    required this.jwt,
     this.authMode = AuthenticationMode.none,
   });
 
@@ -38,6 +40,7 @@ class User {
       gUserCountryCode: countryCode,
       gUserAuthMode: authMode.toString(),
       gUserPhoneNumber: phoneNumber,
+      gJwt: jwt,
     };
   }
 
@@ -50,6 +53,7 @@ class User {
       gUserCountryCode: countryCode,
       gUserAuthMode: authMode.toString(),
       gUserPhoneNumber: phoneNumber,
+      gJwt: jwt
     };
   }
 
@@ -57,6 +61,7 @@ class User {
     return User(
       email: map[gUserEmail],
       password: map[gUserPassword],
+      jwt: map[gJwt],
       uid: map[gUserUId],
       appLocalization: map[gAppLocalization] ?? 'fr',
       countryCode: map[gUserCountryCode],
@@ -71,6 +76,7 @@ class User {
     String? uid,
     String? email,
     String? password,
+        String? jwt,
     String? countryCode,
     int? phoneNumber,
   }) {
@@ -80,6 +86,7 @@ class User {
       phoneNumber: phoneNumber ?? user.phoneNumber,
       appLocalization: user.appLocalization,
       uid: uid ?? user.uid,
+      jwt: jwt ?? user.jwt,
       password: password ?? user.password,
       authMode: authMode ?? user.authMode,
     );
@@ -90,6 +97,7 @@ class User {
       email: map[gUserEmail],
       password: map[gUserPassword],
       uid: map[gUserUId],
+      jwt: map[gJwt],
       appLocalization: map[gAppLocalization],
       phoneNumber: map[gUserPhoneNumber],
       authMode: AuthenticationMode.parse(map[gUserAuthMode]),
