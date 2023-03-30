@@ -83,23 +83,18 @@ class Genos {
   ///Change the configurations relative to remote server
   Future changeConfig(
       {String? host, String? port, String? unsecurePort}) async {
-    bool configChanged = false;
     if (host != null && host != _gHost) {
       _gHost = host;
-      configChanged = true;
     }
     if (port != null && port != _gPort) {
       _gPort = port;
-      configChanged = true;
     }
     if (unsecurePort != null && unsecurePort != _unsecureGPort) {
       _unsecureGPort = unsecurePort;
-      configChanged = true;
     }
-    if (configChanged) {
-      _onConfigChanged(
-          {'host': _gHost, 'port': _gPort, 'unsecurePort': _unsecureGPort});
-    }
+    _onConfigChanged(
+        {'host': _gHost, 'port': _gPort, 'unsecurePort': _unsecureGPort});
+
   }
 
   static Genos get instance => _instance;
@@ -185,8 +180,8 @@ class Genos {
 
   static DateTime get genosDateTime =>
       DataListener.lastKnownSeverDate ??
-      Result.serverDateTime ??
-      DateTime.now();
+          Result.serverDateTime ??
+          DateTime.now();
 
   ///The host which runs the http server
   String get host => _gHost;
@@ -201,7 +196,7 @@ class Genos {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
 
     try {
       final response = await http.post(url,
@@ -229,7 +224,7 @@ class Genos {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
 
     try {
       final response = await http.delete(url,
@@ -280,14 +275,14 @@ class DataListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(DataChange) onChanged, {
-    int reconnectionDelay = 1000,
-    bool secure = true,
-    bool refresh = false,
-    bool reflexive = false,
-    void Function(String)? onError,
-    void Function()? onDispose,
-  }) {
+      void Function(DataChange) onChanged, {
+        int reconnectionDelay = 1000,
+        bool secure = true,
+        bool refresh = false,
+        bool reflexive = false,
+        void Function(String)? onError,
+        void Function()? onDispose,
+      }) {
     _reconnectionDelay = reconnectionDelay;
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
@@ -306,7 +301,7 @@ class DataListener {
       //We store the server datetime
       _lastKnownServerDate = eventSink.dateTime;
       //The connection have be close by the server due to duplicate listening
-      if (eventSink.event == 'close') {
+      if (eventSink.event == 'close' || eventSink.event == 'unauthenticated') {
         dispose();
         onDispose?.call();
         //The connection have been closed due to connection issue
@@ -378,14 +373,14 @@ class SingleListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(DataChange) onChanged, {
-    int reconnectionDelay = 1000,
-    bool secure = true,
-    bool refresh = false,
-    bool reflexive = false,
-    void Function(String)? onError,
-    void Function()? onDispose,
-  }) {
+      void Function(DataChange) onChanged, {
+        int reconnectionDelay = 1000,
+        bool secure = true,
+        bool refresh = false,
+        bool reflexive = false,
+        void Function(String)? onError,
+        void Function()? onDispose,
+      }) {
     _reconnectionDelay = reconnectionDelay;
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
@@ -699,7 +694,7 @@ class GDirectRequest {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
 
     try {
       final response = await http.post(url,
