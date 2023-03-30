@@ -26,7 +26,13 @@ abstract class BaseDataListenerProvider {
         }).forEach((element) {
           element.notify(dataChange);
         });
-      }, secure: secure, reflexive: reflexive);
+      },
+      onError: (str) {
+        listener.onError(str);
+      },
+          secure: secure,
+          reflexive: reflexive
+      );
       dataListeners[l.key];
     }
     listeners.add(listener);
@@ -103,6 +109,9 @@ abstract class DataListenerAction {
   String get table;
   String get key;
   void notify(DataChange dataChange);
+  void onError(string) {
+
+  }
 }
 
 mixin LowLevelDataListener implements DataListenerAction {
