@@ -28,7 +28,11 @@ abstract class BaseDataListenerProvider {
         });
       },
       onError: (str) {
-        listener.onError(str);
+        listeners.where((element) {
+          return element.key == l!.key;
+        }).forEach((element) {
+          element.onError(str);
+        });
       },
           secure: secure,
           reflexive: reflexive
