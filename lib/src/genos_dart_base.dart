@@ -83,7 +83,7 @@ class Genos {
   ///Change the configurations relative to remote server
   Future changeConfig(
       {String? host, String? port, String? unsecurePort}) async {
-    if (host != null && host != _gHost) {
+    if (host != null) {
       _gHost = host;
     }
     if (port != null && port != _gPort) {
