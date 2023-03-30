@@ -109,9 +109,7 @@ abstract class DataListenerAction {
   String get table;
   String get key;
   void notify(DataChange dataChange);
-  void onError(string) {
-
-  }
+  void onError(string);
 }
 
 mixin LowLevelDataListener implements DataListenerAction {
@@ -123,6 +121,11 @@ mixin LowLevelDataListener implements DataListenerAction {
 
 mixin SingleLowLevelDataListener implements DataListenerAction {
   List<String?> get tags;
+
+  @override
+  void onError(string) {
+
+  }
 
   @override
   String get key => '$table/${tags.toSplitableString()}';
