@@ -116,6 +116,11 @@ mixin LowLevelDataListener implements DataListenerAction {
   String? get tag;
 
   @override
+  void onError(string) {
+
+  }
+
+  @override
   String get key => tag == null ? table : '$table/$tag';
 }
 
