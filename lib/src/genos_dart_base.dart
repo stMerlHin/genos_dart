@@ -368,7 +368,7 @@ class DataListener {
 
   String _toJson() {
     return jsonEncode({
-      gAuthorizationBearer: Genos.auth.user!.jwt,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTable: table,
       gTag: tag,
@@ -514,7 +514,7 @@ class SingleListener {
 
   String _toJson({bool? update}) {
     return jsonEncode({
-      gJwt: Genos.auth.user!.jwt,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTags: tags,
       gUpdate: update,
@@ -713,6 +713,7 @@ class GDirectRequest {
   String _toJson() {
     return jsonEncode({
       //gAppSignature: Genos.appSignature,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: connectionId,
       gTable: table,
       gDateTimeEnable: dateTimeValueEnabled,
