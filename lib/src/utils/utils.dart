@@ -12,7 +12,7 @@ class Preferences {
   static final Preferences _instance = Preferences._();
   static String _preferenceFilePath = '';
   static bool _initialized = false;
-  static late Map<String, dynamic> _preferences;
+  static Map<String, dynamic> _preferences = {};
   static bool _locked = false;
 
   Preferences._();
@@ -20,15 +20,15 @@ class Preferences {
   ///Get an instance of preferences
   static Future<Preferences> getInstance() async {
     if (!_initialized) {
-      //await Directory(Geno.appPrivateDirectory).create(recursive: true);
-      _preferenceFilePath = join(Genos.appPrivateDirectory, preferenceFile);
-      File gP = File(_preferenceFilePath);
-      bool exist = await gP.exists();
-      if (exist) {
-        String str = await gP.readAsString();
-        _preferences = jsonDecode(Obfuscator.decrypt(content: str) ?? '{}');
-      } else {
-        _preferences = {};
+      if(Genos.cache) {
+        //await Directory(Geno.appPrivateDirectory).create(recursive: true);
+        _preferenceFilePath = join(Genos.appPrivateDirectory, preferenceFile);
+        File gP = File(_preferenceFilePath);
+        bool exist = await gP.exists();
+        if (exist) {
+          String str = await gP.readAsString();
+          _preferences = jsonDecode(Obfuscator.decrypt(content: str) ?? '{}');
+        }
       }
       _initialized = true;
     }
@@ -46,11 +46,16 @@ class Preferences {
   }
 
   Future<void> _saveData() async {
-    if (!_locked) {
+    if (!_locked && Genos.cache) {
       _locked = true;
       File f = File(_preferenceFilePath);
-      await f
-          .writeAsString(Obfuscator.encrypt(content: jsonEncode(_preferences)));
+      try {
+        await f
+            .writeAsString(
+            Obfuscator.encrypt(content: jsonEncode(_preferences)));
+      } catch(_) {
+
+      }
       _locked = false;
     }
   }
@@ -143,7 +148,10 @@ class Cache {
   }) async {
     String cacheAbsolutePath = cacheFilePath;
 
-    await Directory(Genos.appPrivateDirectory).create(recursive: true);
+    if(Genos.cache) {
+      await Directory(Genos.appPrivateDirectory).create(recursive: true);
+    }
+
     cacheAbsolutePath = join(Genos.appPrivateDirectory, cacheFilePath);
 
     ///Check if an instance of the same cache is not already launched
@@ -153,7 +161,7 @@ class Cache {
 
     File file = File(cacheAbsolutePath);
     Map<String, dynamic> d = {};
-    if (await file.exists()) {
+    if (await file.exists() && Genos.cache) {
       String str = await file.readAsString();
       if (encrypt) {
         d = jsonDecode(Obfuscator.decrypt(

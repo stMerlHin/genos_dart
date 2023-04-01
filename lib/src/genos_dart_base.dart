@@ -14,12 +14,14 @@ class Genos {
   static late String _connectionId;
   static String _unsecureGPort = '80';
   static String _privateDirectory = '';
+  static String? _publicDirectory;
   static String _encryptionKey = '';
   static late final String _appSignature;
   static late final String _appWsSignature;
   static late final Auth auth;
   static bool _initialized = false;
   static bool autoLogOut = false;
+  static bool _cache = true;
   late Function(Genos) _onInitialization;
   late Function()? _onLoginOut;
   late Function(Map<String, String>) _onConfigChanged;
@@ -48,17 +50,21 @@ class Genos {
     required String appSignature,
     required String appWsSignature,
     required String appPrivateDirectory,
+    String? appPublicDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
     bool autoLogOut = false,
+    bool cache = true,
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
       _connectionId = Uuid().v1();
       _tour = tour;
       _privateDirectory = appPrivateDirectory;
+      _publicDirectory = appPublicDirectory;
+      _cache = cache;
       _encryptionKey = encryptionKey;
       _appSignature = appSignature;
       _appWsSignature = appWsSignature;
@@ -115,7 +121,9 @@ class Genos {
       Auth.encodeBase64String(_appWsSignature, _tour);
 
   static String get appPrivateDirectory => _privateDirectory;
+  static String get appPublicDirectory => _publicDirectory ?? _privateDirectory;
   static String get connectionId => _connectionId;
+  static bool get cache => _cache;
   static String get baseUrl => 'https://$_gHost:$_gPort/';
   static String get unsecureBaseUrl => 'http://$_gHost:$_unsecureGPort/';
   static String get wsBaseUrl => 'wss://$_gHost:$_gPort/ws/';
