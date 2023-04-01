@@ -14,11 +14,14 @@ class Genos {
   static late String _connectionId;
   static String _unsecureGPort = '80';
   static String _privateDirectory = '';
+  static String? _publicDirectory;
   static String _encryptionKey = '';
   static late final String _appSignature;
   static late final String _appWsSignature;
   static late final Auth auth;
   static bool _initialized = false;
+  static bool autoLogOut = false;
+  static bool _cache = true;
   late Function(Genos) _onInitialization;
   late Function()? _onLoginOut;
   late Function(Map<String, String>) _onConfigChanged;
@@ -47,20 +50,26 @@ class Genos {
     required String appSignature,
     required String appWsSignature,
     required String appPrivateDirectory,
+    String? appPublicDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
+    bool autoLogOut = false,
+    bool cache = true,
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
       _connectionId = Uuid().v1();
       _tour = tour;
       _privateDirectory = appPrivateDirectory;
+      _publicDirectory = appPublicDirectory;
+      _cache = cache;
       _encryptionKey = encryptionKey;
       _appSignature = appSignature;
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
+      autoLogOut = autoLogOut;
       auth = await Auth.instance;
       auth.addLoginListener(_onUserLoggedOut);
 
@@ -112,7 +121,9 @@ class Genos {
       Auth.encodeBase64String(_appWsSignature, _tour);
 
   static String get appPrivateDirectory => _privateDirectory;
+  static String get appPublicDirectory => _publicDirectory ?? _privateDirectory;
   static String get connectionId => _connectionId;
+  static bool get cache => _cache;
   static String get baseUrl => 'https://$_gHost:$_gPort/';
   static String get unsecureBaseUrl => 'http://$_gHost:$_unsecureGPort/';
   static String get wsBaseUrl => 'wss://$_gHost:$_gPort/ws/';
@@ -309,6 +320,16 @@ class DataListener {
       if (eventSink.event == 'close') {
         dispose();
         onDispose?.call();
+
+      } else if(eventSink.event == 'unauthenticated') {
+        onError?.call('unauthenticated');
+        dispose();
+        onDispose?.call();
+
+        if(Genos.autoLogOut) {
+          Genos.auth.logOut();
+        }
+
         //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
@@ -347,7 +368,7 @@ class DataListener {
 
   String _toJson() {
     return jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTable: table,
       gTag: tag,
@@ -408,6 +429,14 @@ class SingleListener {
         if (eventSink.event == 'close') {
           dispose();
           onDispose?.call();
+
+        } else if(eventSink.event == 'unauthenticated') {
+          onError?.call('unauthenticated');
+          dispose();
+          onDispose?.call();
+          if(Genos.autoLogOut) {
+            Genos.auth.logOut();
+          }
           //The connection have been closed due to connection issue
           //At this level, change can be made on the database during
           //the reconnection phase so we call [onChanged] to make user
@@ -485,7 +514,7 @@ class SingleListener {
 
   String _toJson({bool? update}) {
     return jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTags: tags,
       gUpdate: update,
@@ -683,7 +712,8 @@ class GDirectRequest {
 
   String _toJson() {
     return jsonEncode({
-      gAppSignature: Genos.appSignature,
+      //gAppSignature: Genos.appSignature,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: connectionId,
       gTable: table,
       gDateTimeEnable: dateTimeValueEnabled,
@@ -705,6 +735,7 @@ class GDirectRequest {
       final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
+            'Authorization': 'Bearer'
             //'origin': 'http://localhost'
           },
           body: _toJson());
@@ -718,6 +749,9 @@ class GDirectRequest {
         }
       } else {
         onError(RequestError(message: response.body.toString(), code: 200));
+        if(Genos.autoLogOut) {
+          Genos.auth.logOut();
+        }
       }
     } catch (e) {
       onError(RequestError(message: e.toString(), code: 400));
