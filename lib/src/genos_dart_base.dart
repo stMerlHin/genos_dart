@@ -176,10 +176,6 @@ class Genos {
         : '$unsecureBaseUrl' 'auth/phone/change';
   }
 
-  static String getSubscriptionUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'subscribe' : '$unsecureBaseUrl' 'subscribe';
-  }
-
 
   static DateTime get genosDateTime =>
       DataListener.lastKnownSeverDate ??
