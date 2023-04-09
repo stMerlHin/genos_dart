@@ -180,19 +180,6 @@ class Genos {
     return secured ? '$baseUrl' 'subscribe' : '$unsecureBaseUrl' 'subscribe';
   }
 
-  static String getPointImageUploadUrl(
-      {required String pointId, bool secured = true}) {
-    return secured
-        ? '$baseUrl' 'upload/$pointId/$gImage/'
-        : '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
-  }
-
-  static String getPointMediathecUploadUrl(
-      {required String pointId, bool secured = true}) {
-    return secured
-        ? '$baseUrl' 'upload/$pointId/$gMediathec/'
-        : '$unsecureBaseUrl' 'upload/$pointId/$gMediathec/';
-  }
 
   static DateTime get genosDateTime =>
       DataListener.lastKnownSeverDate ??
