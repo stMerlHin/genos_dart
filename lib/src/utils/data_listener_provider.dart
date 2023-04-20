@@ -70,6 +70,10 @@ class SingleListenerProvider {
             ).forEach((element) {
               element.notify(change);
             });
+          } else if (change.changeType == ChangeType.none) {
+            for (var element in listeners) {
+              element.notify(change);
+            }
           } else {
             listeners.where((element) => element.table == change.table
             ).forEach((element) {
