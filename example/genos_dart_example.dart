@@ -6,7 +6,49 @@ import 'package:genos_dart/genos_dart.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  print("".split('/'));
+  // print('Working ${DateTime.now().toString()}');
+  // final Worker w = Worker();
+  // print('Working2 ${DateTime.now().toString()}');
+  // await w.isolateReady;
+  // w.fetchIds('This is a string ${DateTime.now().toString()}');
+  // w.dispose();
+
+  int iteration = 0;
+  var l = List.generate(1000, (index) => index);
+  int min = 0;
+  int minSearch = 0;
+  List<int> data = [0, l.length -1, 0];
+  int max = l.length -1;
+  // for(int i = 0; i < l.length; i++) {
+  //   if(l[i] < l[min]) {
+  //     int tmp = l[i];
+  //     l[i] = l[min];
+  //     l[min] = tmp;
+  //   } if(l[i] > l[max]) {
+  //       int tmp = l[max];
+  //       l[max] = l[i];
+  //       l[i] = tmp;
+  //   }
+    //print('THE I $i ');
+  did(data, l);
+  print(l);
+
+  for(int j = 0; j < l.length; j++) {
+    for(int i = 0; i < l.length -1; i++) {
+      if(l[i] < l[i+1]) {
+        int tmp = l[i];
+        l[i] = l[i+1];
+        l[i+1] = tmp;
+      }
+      iteration++;
+    }
+  }
+
+  print(l);
+  print(data[0]);
+  print(data[1]);
+  print(data[2]);
+  print('iteration $iteration');
   //dudExample();
   //
   // String str = "CEci est le string";
@@ -206,6 +248,25 @@ void main() async {
   //     print(e);
   //   },
   // );
+}
+
+void did(List<int> data, List<int> l) {
+  while(data[1] > 0) {
+    for (int i = data[0]; i <= data[1]; i++) {
+      if (l[i] < l[data[0]]) {
+        int tmp = l[i];
+        l[i] = l[data[0]];
+        l[data[0]] = tmp;
+      } else if (l[i] > l[data[1]]) {
+        int tmp = l[data[1]];
+        l[data[1]] = l[i];
+        l[i] = tmp;
+      }
+      data[2] = data[2] + 1;
+    }
+    data[0] = data[0] + 1;
+    data[1] = data[1] - 1;
+  }
 }
 
 class MediathecDownloadTaskWrapper extends DownloadTaskWrapper {
