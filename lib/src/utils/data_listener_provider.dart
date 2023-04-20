@@ -57,7 +57,6 @@ class SingleListenerProvider {
     SingleLowLevelDataListener listener, {
     bool secure = true,
   }) {
-    listeners.add(listener);
     if (singleListener == null) {
       singleListener = SingleListener(
         tags: {
@@ -89,6 +88,7 @@ class SingleListenerProvider {
         .isEmpty) {
       singleListener!.addSource(listener);
     }
+    listeners.add(listener);
   }
 
   void dispose(SingleLowLevelDataListener listener) {

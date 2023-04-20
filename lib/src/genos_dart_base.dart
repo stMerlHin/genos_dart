@@ -473,7 +473,6 @@ class SingleListener {
     }
 
     if (shouldSink) {
-      print(toMap());
       _webSocket.sink.add(_toJson(update: true));
     }
   }
