@@ -10,7 +10,7 @@ class Result {
 
   Result({this.data = const [], this.errorHappened = false, this.error});
 
-  static Result fromJson(String json) {
+  static Result fromJson(String json, {bool useCompute = false}) {
     var map = jsonDecode(json);
 
     //get the server dateTime
