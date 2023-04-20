@@ -473,6 +473,7 @@ class SingleListener {
     }
 
     if (shouldSink) {
+      print(toMap());
       _webSocket.sink.add(_toJson(update: true));
     }
   }
@@ -497,12 +498,16 @@ class SingleListener {
   }
 
   String _toJson({bool? update}) {
-    return jsonEncode({
+    return jsonEncode(toMap(update: update));
+  }
+
+  Map<String, dynamic> toMap({bool? update}) {
+    return {
       gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTags: tags,
       gUpdate: update,
-    });
+    };
   }
 
   static String tagFromList(List<String> tags, {String pattern = '/'}) {
