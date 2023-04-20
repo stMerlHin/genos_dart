@@ -65,20 +65,27 @@ class SingleListenerProvider {
       );
       singleListener?.listen(
         (change) {
-          listeners.where((element) => element.table == change.table
-          ).forEach((element) {
-            bool shouldSink = true;
-            if (element.tags.isNotEmpty) {
-              //for (var ele in element.tags) {
+          if(change.tag == 'genos.all') {
+            listeners.where((element) => element.table == change.table
+            ).forEach((element) {
+              element.notify(change);
+            });
+          } else {
+            listeners.where((element) => element.table == change.table
+            ).forEach((element) {
+              bool shouldSink = true;
+              if (element.tags.isNotEmpty) {
+                //for (var ele in element.tags) {
                 if (change.tag != element.tagsValue) {
                   shouldSink = false;
-                //}
+                  //}
+                }
               }
-            }
-            if(shouldSink) {
-              element.notify(change);
-            }
-          });
+              if (shouldSink) {
+                element.notify(change);
+              }
+            });
+          }
         },
         secure: secure,
         reflexive: true,
