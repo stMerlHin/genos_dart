@@ -57,7 +57,6 @@ class SingleListenerProvider {
     SingleLowLevelDataListener listener, {
     bool secure = true,
   }) {
-    listeners.add(listener);
     if (singleListener == null) {
       singleListener = SingleListener(
         tags: {
@@ -66,8 +65,30 @@ class SingleListenerProvider {
       );
       singleListener?.listen(
         (change) {
-          for (var element in listeners) {
-            element.notify(change);
+          if(change.tag == 'genos.all') {
+            listeners.where((element) => element.table == change.table
+            ).forEach((element) {
+              element.notify(change);
+            });
+          } else if (change.changeType == ChangeType.none) {
+            for (var element in listeners) {
+              element.notify(change);
+            }
+          } else {
+            listeners.where((element) => element.table == change.table
+            ).forEach((element) {
+              bool shouldSink = true;
+              if (element.tags.isNotEmpty) {
+                //for (var ele in element.tags) {
+                if (change.tag != element.tagsValue) {
+                  shouldSink = false;
+                  //}
+                }
+              }
+              if (shouldSink) {
+                element.notify(change);
+              }
+            });
           }
         },
         secure: secure,
@@ -78,6 +99,7 @@ class SingleListenerProvider {
         .isEmpty) {
       singleListener!.addSource(listener);
     }
+    listeners.add(listener);
   }
 
   void dispose(SingleLowLevelDataListener listener) {

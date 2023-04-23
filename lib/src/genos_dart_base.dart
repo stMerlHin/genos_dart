@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:genos_dart/genos_dart.dart';
 import 'package:genos_dart/src/model/event_sink.dart';
@@ -14,11 +15,14 @@ class Genos {
   static late String _connectionId;
   static String _unsecureGPort = '80';
   static String _privateDirectory = '';
+  static String? _publicDirectory;
   static String _encryptionKey = '';
   static late final String _appSignature;
   static late final String _appWsSignature;
   static late final Auth auth;
   static bool _initialized = false;
+  static bool autoLogOut = false;
+  static bool _cache = true;
   late Function(Genos) _onInitialization;
   late Function()? _onLoginOut;
   late Function(Map<String, String>) _onConfigChanged;
@@ -47,20 +51,26 @@ class Genos {
     required String appSignature,
     required String appWsSignature,
     required String appPrivateDirectory,
+    String? appPublicDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
+    bool autoLogOut = false,
+    bool cache = true,
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
       _connectionId = Uuid().v1();
       _tour = tour;
       _privateDirectory = appPrivateDirectory;
+      _publicDirectory = appPublicDirectory;
+      _cache = cache;
       _encryptionKey = encryptionKey;
       _appSignature = appSignature;
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
+      autoLogOut = autoLogOut;
       auth = await Auth.instance;
       auth.addLoginListener(_onUserLoggedOut);
 
@@ -112,7 +122,9 @@ class Genos {
       Auth.encodeBase64String(_appWsSignature, _tour);
 
   static String get appPrivateDirectory => _privateDirectory;
+  static String get appPublicDirectory => _publicDirectory ?? _privateDirectory;
   static String get connectionId => _connectionId;
+  static bool get cache => _cache;
   static String get baseUrl => 'https://$_gHost:$_gPort/';
   static String get unsecureBaseUrl => 'http://$_gHost:$_unsecureGPort/';
   static String get wsBaseUrl => 'wss://$_gHost:$_gPort/ws/';
@@ -165,28 +177,11 @@ class Genos {
         : '$unsecureBaseUrl' 'auth/phone/change';
   }
 
-  static String getSubscriptionUrl([bool secured = true]) {
-    return secured ? '$baseUrl' 'subscribe' : '$unsecureBaseUrl' 'subscribe';
-  }
-
-  static String getPointImageUploadUrl(
-      {required String pointId, bool secured = true}) {
-    return secured
-        ? '$baseUrl' 'upload/$pointId/$gImage/'
-        : '$unsecureBaseUrl' 'upload/$pointId/$gImage/';
-  }
-
-  static String getPointMediathecUploadUrl(
-      {required String pointId, bool secured = true}) {
-    return secured
-        ? '$baseUrl' 'upload/$pointId/$gMediathec/'
-        : '$unsecureBaseUrl' 'upload/$pointId/$gMediathec/';
-  }
 
   static DateTime get genosDateTime =>
       DataListener.lastKnownSeverDate ??
-      Result.serverDateTime ??
-      DateTime.now();
+          Result.serverDateTime ??
+          DateTime.now();
 
   ///The host which runs the http server
   String get host => _gHost;
@@ -201,7 +196,7 @@ class Genos {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
 
     try {
       final response = await http.post(url,
@@ -229,7 +224,7 @@ class Genos {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
 
     try {
       final response = await http.delete(url,
@@ -280,14 +275,14 @@ class DataListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(DataChange) onChanged, {
-    int reconnectionDelay = 1000,
-    bool secure = true,
-    bool refresh = false,
-    bool reflexive = false,
-    void Function(String)? onError,
-    void Function()? onDispose,
-  }) {
+      void Function(DataChange) onChanged, {
+        int reconnectionDelay = 1000,
+        bool secure = true,
+        bool refresh = false,
+        bool reflexive = false,
+        void Function(String)? onError,
+        void Function()? onDispose,
+      }) {
     _reconnectionDelay = reconnectionDelay;
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
@@ -309,6 +304,16 @@ class DataListener {
       if (eventSink.event == 'close') {
         dispose();
         onDispose?.call();
+
+      } else if(eventSink.event == 'unauthenticated') {
+        onError?.call('unauthenticated');
+        dispose();
+        onDispose?.call();
+
+        if(Genos.autoLogOut) {
+          Genos.auth.logOut();
+        }
+
         //The connection have been closed due to connection issue
         //At this point, change can be made on the database during
         //the reconnection phase so we call [onChanged] to make user
@@ -347,7 +352,7 @@ class DataListener {
 
   String _toJson() {
     return jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTable: table,
       gTag: tag,
@@ -378,14 +383,14 @@ class SingleListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(DataChange) onChanged, {
-    int reconnectionDelay = 1000,
-    bool secure = true,
-    bool refresh = false,
-    bool reflexive = false,
-    void Function(String)? onError,
-    void Function()? onDispose,
-  }) {
+      void Function(DataChange) onChanged, {
+        int reconnectionDelay = 1000,
+        bool secure = true,
+        bool refresh = false,
+        bool reflexive = false,
+        void Function(String)? onError,
+        void Function()? onDispose,
+      }) {
     _reconnectionDelay = reconnectionDelay;
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
@@ -408,6 +413,14 @@ class SingleListener {
         if (eventSink.event == 'close') {
           dispose();
           onDispose?.call();
+
+        } else if(eventSink.event == 'unauthenticated') {
+          onError?.call('unauthenticated');
+          dispose();
+          onDispose?.call();
+          if(Genos.autoLogOut) {
+            Genos.auth.logOut();
+          }
           //The connection have been closed due to connection issue
           //At this level, change can be made on the database during
           //the reconnection phase so we call [onChanged] to make user
@@ -484,12 +497,16 @@ class SingleListener {
   }
 
   String _toJson({bool? update}) {
-    return jsonEncode({
-      gAppWsKey: Genos.appWsSignature,
+    return jsonEncode(toMap(update: update));
+  }
+
+  Map<String, dynamic> toMap({bool? update}) {
+    return {
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTags: tags,
       gUpdate: update,
-    });
+    };
   }
 
   static String tagFromList(List<String> tags, {String pattern = '/'}) {
@@ -683,7 +700,8 @@ class GDirectRequest {
 
   String _toJson() {
     return jsonEncode({
-      gAppSignature: Genos.appSignature,
+      //gAppSignature: Genos.appSignature,
+      gJwt: Genos.auth.user?.jwt,
       gConnectionId: connectionId,
       gTable: table,
       gDateTimeEnable: dateTimeValueEnabled,
@@ -699,12 +717,13 @@ class GDirectRequest {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
 
     try {
       final response = await http.post(url,
           headers: {
             'Content-type': 'application/json',
+            'Authorization': 'Bearer'
             //'origin': 'http://localhost'
           },
           body: _toJson());
@@ -718,10 +737,67 @@ class GDirectRequest {
         }
       } else {
         onError(RequestError(message: response.body.toString(), code: 200));
+        if(Genos.autoLogOut) {
+          Genos.auth.logOut();
+        }
       }
     } catch (e) {
       onError(RequestError(message: e.toString(), code: 400));
     }
+  }
+}
+
+
+class Worker {
+  late SendPort _sendPort;
+  late Isolate _isolate;
+  final _isolateReady = Completer<void>();
+
+  Worker() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final receivePort = ReceivePort();
+    receivePort.listen(_handleMessage);
+    _isolate = await Isolate.spawn(_isolateEntry, receivePort.sendPort);
+  }
+
+
+  void fetchIds(String str) {
+    _sendPort.send(str);
+  }
+
+  void _handleMessage(dynamic message) {
+    if(message is SendPort) {
+      _sendPort = message;
+      _isolateReady.complete();
+      return;
+    }
+    print(message);
+  }
+
+  Future<void> get isolateReady => _isolateReady.future;
+
+  static void _isolateEntry(dynamic message) {
+    late SendPort sendPort;
+    final ReceivePort receivePort = ReceivePort();
+
+    receivePort.listen((dynamic message) {
+      sendPort.send(message.toString().toUpperCase());
+    });
+
+    if(message is SendPort) {
+      sendPort = message;
+      sendPort.send(receivePort.sendPort);
+      return;
+    }
+
+
+  }
+
+  void dispose() {
+    _isolate.kill();
   }
 }
 
