@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:genos_dart/genos_dart.dart';
 import 'package:genos_dart/src/model/event_sink.dart';
@@ -553,12 +554,16 @@ class SingleListener {
   }
 
   String _toJson({bool? update}) {
-    return jsonEncode({
+    return jsonEncode(toMap(update: update));
+  }
+
+  Map<String, dynamic> toMap({bool? update}) {
+    return {
       gJwt: Genos.auth.user?.jwt,
       gConnectionId: Genos.connectionId,
       gTags: tags,
       gUpdate: update,
-    });
+    };
   }
 
   static String tagFromList(List<String> tags, {String pattern = '/'}) {
@@ -798,6 +803,60 @@ class GDirectRequest {
     } catch (e) {
       onError(RequestError(message: e.toString(), code: 400));
     }
+  }
+}
+
+
+class Worker {
+  late SendPort _sendPort;
+  late Isolate _isolate;
+  final _isolateReady = Completer<void>();
+
+  Worker() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    final receivePort = ReceivePort();
+    receivePort.listen(_handleMessage);
+    _isolate = await Isolate.spawn(_isolateEntry, receivePort.sendPort);
+  }
+
+
+  void fetchIds(String str) {
+    _sendPort.send(str);
+  }
+
+  void _handleMessage(dynamic message) {
+    if(message is SendPort) {
+      _sendPort = message;
+      _isolateReady.complete();
+      return;
+    }
+    print(message);
+  }
+
+  Future<void> get isolateReady => _isolateReady.future;
+
+  static void _isolateEntry(dynamic message) {
+    late SendPort sendPort;
+    final ReceivePort receivePort = ReceivePort();
+
+    receivePort.listen((dynamic message) {
+      sendPort.send(message.toString().toUpperCase());
+    });
+
+    if(message is SendPort) {
+      sendPort = message;
+      sendPort.send(receivePort.sendPort);
+      return;
+    }
+
+
+  }
+
+  void dispose() {
+    _isolate.kill();
   }
 }
 
