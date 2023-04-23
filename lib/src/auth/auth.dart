@@ -448,7 +448,8 @@ class Auth {
           body: jsonEncode({
             gAppSignature: Genos.appSignature,
             gUserEmail: email,
-            gUserPassword: password
+            gUserPassword: password,
+            gAppName: Genos.appName,
           }));
 
       if (response.statusCode == 200) {

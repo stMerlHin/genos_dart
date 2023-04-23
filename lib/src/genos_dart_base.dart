@@ -4,8 +4,11 @@ import 'dart:convert';
 import 'package:genos_dart/genos_dart.dart';
 import 'package:genos_dart/src/model/event_sink.dart';
 import 'package:http/http.dart' as http;
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:worker_manager/worker_manager.dart';
 
 class Genos {
   static String _gHost = gLocalhost;
@@ -16,17 +19,26 @@ class Genos {
   static String _privateDirectory = '';
   static String? _publicDirectory;
   static String _encryptionKey = '';
+  static late final bool _enableMultiThreading;
+  static late final String _appName;
+  static late final String? _mailJetApiKey;
+  static late final String? _mailJetApiSecret;
   static late final String _appSignature;
   static late final String _appWsSignature;
+  static bool _executorWarmedUp = false;
   static late final Auth auth;
   static bool _initialized = false;
-  static bool autoLogOut = false;
+  static bool _autoLogout = false;
   static bool _cache = true;
   late Function(Genos) _onInitialization;
   late Function()? _onLoginOut;
   late Function(Map<String, String>) _onConfigChanged;
 
   static final Genos _instance = Genos._();
+
+  static String get mailJetApiKey => _mailJetApiKey ?? '';
+
+  static String get mailJetApiSecret => _mailJetApiSecret ?? '';
 
   Genos._();
 
@@ -50,7 +62,13 @@ class Genos {
     required String appSignature,
     required String appWsSignature,
     required String appPrivateDirectory,
+    String? mailJetApiKey,
+    String? mailJetApiSecret,
     String? appPublicDirectory,
+    String appName = 'GENOS',
+    bool enableDispatcher = true,
+    int? isolatesCount,
+    bool log = false,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
     int tour = 3,
@@ -60,6 +78,20 @@ class Genos {
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
+      _enableMultiThreading = _enableMultiThreading;
+      if(enableDispatcher && ! _executorWarmedUp) {
+        if(isolatesCount == null) {
+          await Executor().warmUp(
+            log: log,
+          );
+        } else {
+          await Executor().warmUp(
+              log: log,
+              isolatesCount: isolatesCount
+          );
+        }
+        _executorWarmedUp = true;
+      }
       _connectionId = Uuid().v1();
       _tour = tour;
       _privateDirectory = appPrivateDirectory;
@@ -68,11 +100,13 @@ class Genos {
       _encryptionKey = encryptionKey;
       _appSignature = appSignature;
       _appWsSignature = appWsSignature;
+      _mailJetApiKey = mailJetApiKey;
+      _mailJetApiSecret = mailJetApiSecret;
       _onLoginOut = onUserLoggedOut;
-      autoLogOut = autoLogOut;
+      _autoLogout = autoLogOut;
       auth = await Auth.instance;
       auth.addLoginListener(_onUserLoggedOut);
-
+      _appName = appName;
       _gHost = host;
       _gPort = port;
       _unsecureGPort = unsecurePort;
@@ -80,6 +114,25 @@ class Genos {
       _onConfigChanged = onConfigChanged ?? (d) {};
       _onInitialization(this);
       _initialized = true;
+    }
+  }
+
+  static Future<void> warmUpExecutor({
+    bool log = false,
+    int? isolatesCount
+  }) async {
+    if(! _executorWarmedUp) {
+      if(isolatesCount == null) {
+        await Executor().warmUp(
+          log: log,
+        );
+      } else {
+        await Executor().warmUp(
+            log: log,
+            isolatesCount: isolatesCount
+        );
+      }
+      _executorWarmedUp = true;
     }
   }
 
@@ -113,12 +166,15 @@ class Genos {
 
   static Genos get instance => _instance;
   static int get tour => _tour;
+  static bool get autoLogout => _autoLogout;
   static String get encryptionKey => _encryptionKey;
   static String get appSignature =>
       Auth.encodeBase64String(_appSignature, _tour);
 
   static String get appWsSignature =>
       Auth.encodeBase64String(_appWsSignature, _tour);
+
+  static String get appName => _appName;
 
   static String get appPrivateDirectory => _privateDirectory;
   static String get appPublicDirectory => _publicDirectory ?? _privateDirectory;
@@ -127,6 +183,7 @@ class Genos {
   static String get baseUrl => 'https://$_gHost:$_gPort/';
   static String get unsecureBaseUrl => 'http://$_gHost:$_unsecureGPort/';
   static String get wsBaseUrl => 'wss://$_gHost:$_gPort/ws/';
+  static bool get multiThreadingEnabled => _enableMultiThreading;
   static String get unSecureWsBaseUrl => 'ws://$_gHost:$_unsecureGPort/ws/';
   static String getEmailSigningUrl([bool secured = true]) {
     return secured
@@ -179,8 +236,8 @@ class Genos {
 
   static DateTime get genosDateTime =>
       DataListener.lastKnownSeverDate ??
-      Result.serverDateTime ??
-      DateTime.now();
+          Result.serverDateTime ??
+          DateTime.now();
 
   ///The host which runs the http server
   String get host => _gHost;
@@ -195,7 +252,7 @@ class Genos {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}subscribe');
 
     try {
       final response = await http.post(url,
@@ -223,7 +280,7 @@ class Genos {
     bool secure = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}$path');
 
     try {
       final response = await http.delete(url,
@@ -274,14 +331,14 @@ class DataListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(DataChange) onChanged, {
-    int reconnectionDelay = 1000,
-    bool secure = true,
-    bool refresh = false,
-    bool reflexive = false,
-    void Function(String)? onError,
-    void Function()? onDispose,
-  }) {
+      void Function(DataChange) onChanged, {
+        int reconnectionDelay = 1000,
+        bool secure = true,
+        bool refresh = false,
+        bool reflexive = false,
+        void Function(String)? onError,
+        void Function()? onDispose,
+      }) {
     _reconnectionDelay = reconnectionDelay;
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
@@ -309,7 +366,7 @@ class DataListener {
         dispose();
         onDispose?.call();
 
-        if(Genos.autoLogOut) {
+        if(Genos.autoLogout) {
           Genos.auth.logOut();
         }
 
@@ -382,14 +439,14 @@ class SingleListener {
   static DateTime? get lastKnownSeverDate => _lastKnownServerDate;
 
   void listen(
-    void Function(DataChange) onChanged, {
-    int reconnectionDelay = 1000,
-    bool secure = true,
-    bool refresh = false,
-    bool reflexive = false,
-    void Function(String)? onError,
-    void Function()? onDispose,
-  }) {
+      void Function(DataChange) onChanged, {
+        int reconnectionDelay = 1000,
+        bool secure = true,
+        bool refresh = false,
+        bool reflexive = false,
+        void Function(String)? onError,
+        void Function()? onDispose,
+      }) {
     _reconnectionDelay = reconnectionDelay;
     _create(onChanged, secure, onError, onDispose, refresh, reflexive);
   }
@@ -417,7 +474,7 @@ class SingleListener {
           onError?.call('unauthenticated');
           dispose();
           onDispose?.call();
-          if(Genos.autoLogOut) {
+          if(Genos.autoLogout) {
             Genos.auth.logOut();
           }
           //The connection have been closed due to connection issue
@@ -573,12 +630,13 @@ WebSocketChannel createChannel(String url, [bool secure = true]) {
 //           print(error);
 //     });
 class GDirectRequest {
-  String? connectionId;
-  String sql;
-  GRequestType type;
-  String table;
-  bool dateTimeValueEnabled;
-  List<dynamic>? values;
+  final String? connectionId;
+  final String sql;
+  final GRequestType type;
+  final String table;
+  final bool dateTimeValueEnabled;
+  final List<dynamic>? values;
+
 
   GDirectRequest({
     required this.sql,
@@ -710,9 +768,10 @@ class GDirectRequest {
     required Function(Result) onSuccess,
     required Function(RequestError) onError,
     bool secure = true,
+    bool dispatchWork = true,
   }) async {
     final url =
-        Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
+    Uri.parse('${secure ? Genos.baseUrl : Genos.unsecureBaseUrl}request');
 
     try {
       final response = await http.post(url,
@@ -724,7 +783,7 @@ class GDirectRequest {
           body: _toJson());
 
       if (response.statusCode == 200) {
-        Result result = Result.fromJson(response.body);
+        Result result = await Result.fromJson(response.body);
         if (result.errorHappened) {
           onError(result.error!);
         } else {
@@ -732,7 +791,7 @@ class GDirectRequest {
         }
       } else {
         onError(RequestError(message: response.body.toString(), code: 200));
-        if(Genos.autoLogOut) {
+        if(Genos.autoLogout) {
           Genos.auth.logOut();
         }
       }
@@ -810,6 +869,39 @@ extension MapExt on Map<String, dynamic> {
       }
     }
     return '$str ';
+  }
+}
+
+
+Future<bool> sendEmailViaMailJet({
+  required String senderEmail,
+  String senderName = 'GENOS',
+  required List<String> emails,
+  required String subject,
+  required String message,
+  required String greeting,
+  String? mailJetApiKey,
+  String? mailJetApiSecret,
+  List<Attachment> attachments = const [],
+}) async {
+  final smtpServer = SmtpServer(
+    'in-v3.mailjet.com',
+    port: 587,
+    username: mailJetApiKey ?? Genos.mailJetApiKey,
+    password: mailJetApiSecret ?? Genos.mailJetApiSecret,
+  );
+  final mailerMessage = Message()
+    ..from = Address(senderEmail, senderName)
+    ..recipients.addAll(emails)
+    ..attachments.addAll(attachments)
+    ..subject = subject
+    ..html = message;
+
+  try {
+    await send(mailerMessage, smtpServer);
+    return true;
+  } on Error {
+    return false;
   }
 }
 

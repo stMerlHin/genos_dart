@@ -22,6 +22,7 @@ const String gAdd = 'add';
 const String gAppSignature = 'app_signature';
 const String gUser = 'g_user';
 const String gUserPassword = 'g_user_password';
+const String gAppName = 'g_app_name';
 const String gUserUId = 'g_user_uid';
 const String gUserEmail = 'g_user_email';
 const String gUserCountryCode = 'g_user_country_code';
