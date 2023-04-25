@@ -67,7 +67,7 @@ class Genos {
     String? mailJetApiSecret,
     String? appPublicDirectory,
     String appName = 'GENOS',
-    bool enableDispatcher = true,
+    bool enableMultiThreading = true,
     int? isolatesCount,
     bool log = false,
     required Future Function(Genos) onInitialization,
@@ -79,8 +79,8 @@ class Genos {
   }) async {
     _onInitialization = onInitialization;
     if (!_initialized) {
-      _enableMultiThreading = _enableMultiThreading;
-      if(enableDispatcher && ! _executorWarmedUp) {
+      _enableMultiThreading = enableMultiThreading;
+      if(enableMultiThreading && ! _executorWarmedUp) {
         if(isolatesCount == null) {
           await Executor().warmUp(
             log: log,
