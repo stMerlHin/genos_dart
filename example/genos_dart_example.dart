@@ -6,7 +6,50 @@ import 'package:genos_dart/genos_dart.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  dudExample();
+  // print('Working ${DateTime.now().toString()}');
+  // final Worker w = Worker();
+  // print('Working2 ${DateTime.now().toString()}');
+  // await w.isolateReady;
+  // w.fetchIds('This is a string ${DateTime.now().toString()}');
+  // w.dispose();
+
+  int iteration = 0;
+  var l = List.generate(1000, (index) => index);
+  int min = 0;
+  int minSearch = 0;
+  List<int> data = [0, l.length -1, 0];
+  int max = l.length -1;
+  // for(int i = 0; i < l.length; i++) {
+  //   if(l[i] < l[min]) {
+  //     int tmp = l[i];
+  //     l[i] = l[min];
+  //     l[min] = tmp;
+  //   } if(l[i] > l[max]) {
+  //       int tmp = l[max];
+  //       l[max] = l[i];
+  //       l[i] = tmp;
+  //   }
+    //print('THE I $i ');
+  did(data, l);
+  print(l);
+
+  for(int j = 0; j < l.length; j++) {
+    for(int i = 0; i < l.length -1; i++) {
+      if(l[i] < l[i+1]) {
+        int tmp = l[i];
+        l[i] = l[i+1];
+        l[i+1] = tmp;
+      }
+      iteration++;
+    }
+  }
+
+  print(l);
+  print(data[0]);
+  print(data[1]);
+  print(data[2]);
+  print('iteration $iteration');
+  //dudExample();
   //
   // String str = "CEci est le string";
   // String en = Auth.encodeBase64String(str);
@@ -207,28 +250,55 @@ void main() async {
   // );
 }
 
+void did(List<int> data, List<int> l) {
+  while(data[1] > 0) {
+    for (int i = data[0]; i <= data[1]; i++) {
+      if (l[i] < l[data[0]]) {
+        int tmp = l[i];
+        l[i] = l[data[0]];
+        l[data[0]] = tmp;
+      } else if (l[i] > l[data[1]]) {
+        int tmp = l[data[1]];
+        l[data[1]] = l[i];
+        l[i] = tmp;
+      }
+      data[2] = data[2] + 1;
+    }
+    data[0] = data[0] + 1;
+    data[1] = data[1] - 1;
+  }
+}
+
+class MediathecDownloadTaskWrapper extends DownloadTaskWrapper {
+  final bool? provider;
+
+  MediathecDownloadTaskWrapper({required super.downloadTask, this.provider}) {
+    if (provider != null) {
+      addListener(TaskListenerCallbacks(
+          onSuccessCalled: ([result, id]) {}, onErrorCalled: ([error, id]) {}));
+    }
+  }
+}
+
 void dudExample() async {
   List<DownloadTaskWrapper> tas = [
-    // DownloadTaskWrapper(
-    //     downloadTask: DownloadTask.resumeFromFile(
-    //       id: 1,
-    //       url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
-    //       filePath: 'apolo11.pdf',
-    //       trustBadCertificate: true,
-    //       //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
-    //       // )
-    //     )
-    // ),
-    // DownloadTaskWrapper(
-    //     downloadTask: DownloadTask.resumeFromFile(
-    //       id: 2,
-    //       url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
-    //       filePath: 'apolo12.pdf',
-    //       trustBadCertificate: true,
-    //       //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
-    //       // )
-    //     )
-    // ),
+    DownloadTaskWrapper(
+        downloadTask: DownloadTask.resumeFromFile(
+      id: 1,
+      url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+      filePath: 'apolo11.pdf',
+      trustBadCertificate: true,
+      // )
+    )),
+    DownloadTaskWrapper(
+        downloadTask: DownloadTask.resumeFromFile(
+      id: 2,
+      url: 'https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf',
+      filePath: 'apolo12.pdf',
+      trustBadCertificate: true,
+      //headers: {'app_signature': '91a2dbf0-292d-11ed-91f1-4f98460f463c'}
+      // )
+    )),
     DownloadTaskWrapper(
         downloadTask: DownloadTask.resumeFromFile(
       id: 3,
@@ -240,17 +310,21 @@ void dudExample() async {
     )),
   ];
 
+  tas.first.addListener(TaskListenerCallbacks(
+      onSuccessCalled: ([onSuccessCalled, i]) {}, onErrorCalled: ([id, i]) {}));
+
   LinkedTasksWrapper wrapper = LinkedTasksWrapper(tas);
-  wrapper.addListener(LinkedTaskListenerCallbacks(onSuccessCalled: () {
+  wrapper
+      .addListener(LinkedTaskListenerCallbacks(onSuccessCalled: ([value, id]) {
     print('SUCCESS CALLED');
-  }, onErrorCalled: (str) {
+  }, onErrorCalled: (str, [id]) {
     print('ON ERROR');
     print(str);
-  }, onProgressCalled: (p) {
+  }, onProgressCalled: (p, [id]) {
     print(p);
   }, onPartialSuccessCalled: (i, v) {
     print('PARTIAL SUCCESS ${wrapper.tasksLeft} $i $v');
-    wrapper.cancel();
+    // wrapper.cancel();
   }));
   // d.setListener(onProgress: (pr) async {
   //   // if(pr == 50) {

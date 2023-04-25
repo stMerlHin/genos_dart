@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:genos_dart/src/utils/utils.dart';
 import 'package:http/http.dart' as http;
-import 'package:crypto/crypto.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -32,12 +32,20 @@ class Auth {
     return _instance;
   }
 
-  static String decodeBase64String(String string) {
-    return utf8.decode(base64.decode(string));
+  static String decodeBase64String(String string, [int tour = 1]) {
+    String pass = string;
+    for (int i = 0; i < tour; i++) {
+      pass = utf8.decode(base64.decode(pass));
+    }
+    return pass;
   }
 
-  static String encodeBase64String(String string) {
-    return base64.encode(utf8.encode(string));
+  static String encodeBase64String(String string, [int tour = 1]) {
+    String pass = string;
+    for (int i = 0; i < tour; i++) {
+      pass = base64.encode(utf8.encode(pass));
+    }
+    return pass;
   }
 
   static String _hashPassword(
@@ -54,24 +62,31 @@ class Auth {
     return Uuid().v1().substring(0, 8).replaceAll('-', '').replaceAll('_', '');
   }
 
-  static void _getAuthenticationData() {
-    String? uid = _preferences.getString(gUserUId);
-    if (uid != null) {
-      String? email = _preferences.getString(gUserEmail);
-      String? countryCode = _preferences.getString(gUserCountryCode);
-      int? phoneNumber = _preferences.getInt(gUserPhoneNumber);
-      String? authMode = _preferences.getString(gUserAuthMode);
-      String? password = _preferences.getString(gUserPassword);
-      AuthenticationMode mode = AuthenticationMode.parse(authMode);
-      if (mode != AuthenticationMode.none) {
-        _user = User(
-            uid: uid,
-            email: email,
-            countryCode: countryCode,
-            phoneNumber: phoneNumber,
-            authMode: mode,
-            password: password);
+  static void _getAuthenticationData([User? user]) {
+    if(user == null) {
+      String? uid = _preferences.getString(gUserUId);
+      String? jwt = _preferences.getString(gJwt);
+      if (uid != null && jwt != null) {
+        String? email = _preferences.getString(gUserEmail);
+        String? countryCode = _preferences.getString(gUserCountryCode);
+        int? phoneNumber = _preferences.getInt(gUserPhoneNumber);
+        String? authMode = _preferences.getString(gUserAuthMode);
+        String? password = _preferences.getString(gUserPassword);
+        AuthenticationMode mode = AuthenticationMode.parse(authMode);
+        if (mode != AuthenticationMode.none) {
+          _user = User(
+              uid: uid,
+              email: email,
+              countryCode: countryCode,
+              phoneNumber: phoneNumber,
+              authMode: mode,
+              password: password,
+              jwt: jwt
+          );
+        }
       }
+    } else {
+      _user = user;
     }
   }
 
@@ -94,10 +109,10 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   Future<void> recoverPassword(
       {required String email,
-      required Function onSuccess,
-      required Function(String) onError,
-      bool secure = true,
-      String appLocalization = 'fr'}) async {
+        required Function onSuccess,
+        required Function(String) onError,
+        bool secure = true,
+        String appLocalization = 'fr'}) async {
     final url = Uri.parse(Genos.getPasswordRecoveryUrl(secure));
     try {
       final response = await http.post(url,
@@ -137,12 +152,12 @@ class Auth {
   /// to fr
   Future<void> changePassword(
       {required String email,
-      required String password,
-      required String newPassword,
-      required Function onSuccess,
-      required Function(String) onError,
-      bool secure = true,
-      String appLocalization = 'fr'}) async {
+        required String password,
+        required String newPassword,
+        required Function onSuccess,
+        required Function(String) onError,
+        bool secure = true,
+        String appLocalization = 'fr'}) async {
     final url = Uri.parse(Genos.getChangePasswordUrl(secure));
     try {
       final response = await http.post(url,
@@ -181,10 +196,10 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   Future<void> loginWithPhoneNumber(
       {required String countryCode,
-      required int phoneNumber,
-      required Function(String) onSuccess,
-      required Function(String) onError,
-      bool secure = true}) async {
+        required int phoneNumber,
+        required Function(String) onSuccess,
+        required Function(String) onError,
+        bool secure = true}) async {
     final url = Uri.parse(Genos.getPhoneAuthUrl(secure));
     try {
       final response = await http.post(url,
@@ -204,6 +219,7 @@ class Auth {
         } else {
           User user = User(
               uid: result.data[gUserUId],
+              jwt: result.data[gJwt],
               phoneNumber: phoneNumber,
               countryCode: countryCode,
               authMode: AuthenticationMode.phoneNumber);
@@ -232,12 +248,12 @@ class Auth {
   ///when it's set to false
   Future<void> changePhoneNumber(
       {required String countryCode,
-      required int phoneNumber,
-      required String newCountryCode,
-      required int newPhoneNumber,
-      required Function() onSuccess,
-      required Function(String) onError,
-      bool secure = true}) async {
+        required int phoneNumber,
+        required String newCountryCode,
+        required int newPhoneNumber,
+        required Function() onSuccess,
+        required Function(String) onError,
+        bool secure = true}) async {
     final url = Uri.parse(Genos.getPhoneChangeUrl(secure));
     try {
       final response = await http.post(url,
@@ -278,10 +294,10 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   Future<void> loginWithEmailAndPassword(
       {required String email,
-      required String password,
-      required Function(User) onSuccess,
-      required Function(String) onError,
-      bool secure = true}) async {
+        required String password,
+        required Function(User) onSuccess,
+        required Function(String) onError,
+        bool secure = true}) async {
     final url = Uri.parse(Genos.getEmailLoginUrl(secure));
     try {
       final response = await http.post(url,
@@ -325,13 +341,13 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   Future<void> changeEmail(
       {required String newEmail,
-      required String oldEmail,
-      required String password,
-      required Function onEmailSent,
-      Function(String)? onListenerDisconnected,
-      Function()? onEmailConfirmed,
-      required Function(String) onError,
-      bool secure = true}) async {
+        required String oldEmail,
+        required String password,
+        required Function onEmailSent,
+        Function(String)? onListenerDisconnected,
+        Function()? onEmailConfirmed,
+        required Function(String) onError,
+        bool secure = true}) async {
     final url = Uri.parse(Genos.getEmailChangeUrl(secure));
 
     WebSocketChannel channel;
@@ -398,12 +414,12 @@ class Auth {
   ///[secure] when it set to true use https and http when it's set to false
   Future<void> signingWithEmailAndPassword(
       {required String email,
-      required String password,
-      required Function onEmailSent,
-      Function(String)? onListenerDisconnected,
-      Function(User)? onEmailConfirmed,
-      required Function(String) onError,
-      bool secure = true}) async {
+        required String password,
+        required Function onEmailSent,
+        Function(String)? onListenerDisconnected,
+        Function(User)? onEmailConfirmed,
+        required Function(String) onError,
+        bool secure = true}) async {
     final url = Uri.parse(Genos.getEmailSigningUrl(secure));
 
     WebSocketChannel channel;
@@ -416,7 +432,7 @@ class Auth {
       User user = User.fromJson(event);
       //add user to preference
       _preferences.putAll(user.toMap()..addAll({gUserPassword: password}));
-      _getAuthenticationData();
+      _getAuthenticationData(user);
       _notifyLoginListener(true);
       onEmailConfirmed?.call(user);
       //channel.sink.close();
@@ -432,7 +448,8 @@ class Auth {
           body: jsonEncode({
             gAppSignature: Genos.appSignature,
             gUserEmail: email,
-            gUserPassword: password
+            gUserPassword: password,
+            gAppName: Genos.appName,
           }));
 
       if (response.statusCode == 200) {
@@ -455,12 +472,12 @@ class Auth {
 
   Future<void> loginWithQRCode(
       {required String platform,
-      required Function(User) onSuccess,
-      required Function(String) onCodeReceived,
-      required Function(String) onDetached,
-      required Function(String) onError,
-      Function()? onDone,
-      bool secure = true}) async {
+        required Function(User) onSuccess,
+        required Function(String) onCodeReceived,
+        required Function(String) onDetached,
+        required Function(String) onError,
+        Function()? onDone,
+        bool secure = true}) async {
     //final url = Uri.parse(Genos.getEmailSigningUrl(secure));
 
     WebSocketChannel channel;
@@ -481,7 +498,7 @@ class Auth {
           //add user to preference
           _preferences.putAll(user.toMap());
 
-          _getAuthenticationData();
+          _getAuthenticationData(user);
           _notifyLoginListener(true);
 
           //channel.sink.close();
@@ -535,7 +552,7 @@ class Auth {
   ///This will delete user authentication data on the device
   Future logOut() async {
     _user = null;
-    await _preferences.putAll(User().toMap());
+    await _preferences.putAll(User(jwt: '').toMap());
     _notifyLoginListener(false);
   }
 
