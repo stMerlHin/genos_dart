@@ -30,6 +30,7 @@ class DownloadTask extends Task {
     required dynamic id,
     required this.savePath,
     required this.fileMode,
+    String? name = '',
     int? retryCount,
     Duration? retryDelay,
     bool trustBadCertificate = false,
@@ -41,6 +42,7 @@ class DownloadTask extends Task {
     super.retryDelay = retryDelay ?? const Duration(seconds: 2);
     this.start = start;
     file = File(savePath);
+    taskName = name ?? '';
     this.retryCount = retryCount ?? 10;
     badCertificateCallback =
         ((X509Certificate cert, String host, int port) => trustBadCertificate);
@@ -53,6 +55,7 @@ class DownloadTask extends Task {
     required String savePath,
     required int start,
     Duration? retryDelay,
+    String? name,
     int? retryCount,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
@@ -64,6 +67,7 @@ class DownloadTask extends Task {
         retryCount: retryCount,
         savePath: savePath,
         start: start,
+        name: name,
         trustBadCertificate: trustBadCertificate,
         fileMode: FileMode.append,
         headers: headers);
@@ -75,12 +79,14 @@ class DownloadTask extends Task {
     required String savePath,
     Duration? retryDelay,
     int? retryCount,
+    String? name,
     bool trustBadCertificate = false,
     Map<String, dynamic> headers = const {},
   }) {
     return DownloadTask(
       url: url,
       id: id,
+      name: name,
       retryDelay: retryDelay,
       retryCount: retryCount,
       savePath: savePath,
@@ -93,6 +99,7 @@ class DownloadTask extends Task {
   factory DownloadTask.resumeFromFile({
     required String url,
     dynamic id,
+    String? name,
     required String filePath,
     Duration? retryDelay,
     int? retryCount,
@@ -111,6 +118,7 @@ class DownloadTask extends Task {
       retryDelay: retryDelay,
       retryCount: retryCount,
       id: id,
+      name: name,
       start: length,
       trustBadCertificate: trustBadCertificate,
       headers: headers,
@@ -163,8 +171,8 @@ class DownloadTask extends Task {
               _downloadedByte += data.length;
 
               downloadedFile.writeFromSync(data);
-
-              onProgress?.call(((_downloadedByte / fileSize) * 100).toInt());
+              currentProgress = ((_downloadedByte / fileSize) * 100).toInt();
+              onProgress?.call(currentProgress);
             },
             onDone: () {
               downloadedFile.closeSync();
@@ -175,8 +183,6 @@ class DownloadTask extends Task {
             onError: (e) {
               downloadedFile.closeSync();
               paused = true;
-              print("io");
-              print(e);
               throw e;
             },
             cancelOnError: true,
@@ -268,6 +274,7 @@ class UploadTask extends Task {
     required File file,
     required dynamic id,
     required int retryCount,
+    required String? name,
     Duration? retryDelay,
     required this.multipart,
     bool trustBadCertificate = false,
@@ -278,6 +285,7 @@ class UploadTask extends Task {
     this.url = url;
     this.start = start;
     this.file = file;
+    taskName = name ?? '';
     this.retryDelay = retryDelay ?? const Duration(seconds: 2);
     this.retryCount = retryCount;
     badCertificateCallback =
@@ -291,6 +299,7 @@ class UploadTask extends Task {
     required int start,
     dynamic id,
     int retryCount = 10,
+    String? name,
     Duration? retryDelay,
     bool multipart = false,
     bool trustBadCertificate = false,
@@ -299,6 +308,7 @@ class UploadTask extends Task {
     return UploadTask(
         url: url,
         id: id,
+        name: name,
         retryCount: retryCount,
         file: file,
         retryDelay: retryDelay,
@@ -313,6 +323,7 @@ class UploadTask extends Task {
     required File file,
     dynamic id,
     int retryCount = 10,
+    String? name,
     Duration? retryDelay,
     bool multipart = false,
     bool trustBadCertificate = false,
@@ -321,6 +332,7 @@ class UploadTask extends Task {
     return UploadTask(
       url: url,
       id: id,
+      name: name,
       retryDelay: retryDelay,
       retryCount: retryCount,
       multipart: false,
@@ -371,9 +383,9 @@ class UploadTask extends Task {
           handleData: (data, sink) {
             if (!paused && !canceled) {
               _uploadedByte += data.length;
-
+              currentProgress = ((_uploadedByte / fileSize) * 100).toInt();
               if (onUploadProgress != null) {
-                onUploadProgress(((_uploadedByte / fileSize) * 100).toInt());
+                onUploadProgress(currentProgress);
               }
 
               sink.add(data);
@@ -433,7 +445,7 @@ class UploadTask extends Task {
       final request = await httpClient.postUrl(Uri.parse(url));
 
       int byteCount = 0;
-      int percentage = 0;
+      int currentProgress = 0;
 
       var multipart = await http.MultipartFile.fromPath(
           path.basename(file.path), file.path,
@@ -470,9 +482,10 @@ class UploadTask extends Task {
             byteCount += data.length;
 
             if (onProgress != null) {
-              if (percentage != ((byteCount / totalByteLength) * 100).toInt()) {
+              if (currentProgress !=
+                  ((byteCount / totalByteLength) * 100).toInt()) {
                 onProgress(((byteCount / totalByteLength) * 100).toInt());
-                percentage = ((byteCount / totalByteLength) * 100).toInt();
+                currentProgress = ((byteCount / totalByteLength) * 100).toInt();
               }
               // CALL STATUS CALLBACK;
             }
@@ -616,6 +629,10 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
   @protected
   bool retrying = false;
   @protected
+  String taskName = '';
+  @protected
+  int currentProgress = 0;
+  @protected
   late int retryCountLeft;
   late StreamSubscription<List<int>> _subscription;
   late HttpClientRequest request;
@@ -673,6 +690,9 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
   @override
   bool get isPaused => super.isPaused && !retrying;
 
+  @override
+  String get name => taskName;
+
   //Set onSuccess, onError and onProgressListener
   //It must be call before run and resume to not miss events
   void setListener(
@@ -694,6 +714,9 @@ abstract class Task extends IdentifiedTaskRunner with TaskState {
       retryCountLeft = retryCount;
     }
   }
+
+  @override
+  int get progress => currentProgress;
 
   @protected
   Future<void> stabilizeTask() async {}

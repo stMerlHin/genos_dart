@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:genos_dart/genos_dart.dart';
+import 'package:worker_manager/worker_manager.dart';
 
 class Result {
   final List<Map<String, dynamic>> data;
@@ -10,8 +11,18 @@ class Result {
 
   Result({this.data = const [], this.errorHappened = false, this.error});
 
-  static Result fromJson(String json) {
-    var map = jsonDecode(json);
+  static Future<Result> fromJson(String json, {bool useIsolate = true}) async {
+    Map<String, dynamic> map;
+    if(Genos.multiThreadingEnabled && useIsolate) {
+      final task = Executor().execute(
+          arg1: json,
+          fun1: (String js, TypeSendPort port) {
+        return jsonDecode(json);
+      });
+      map = await task.future;
+    } else {
+      map = jsonDecode(json);
+    }
 
     //get the server dateTime
     Result._serverDateTime = DateTime.parse(map[gDateTime]);
@@ -23,8 +34,6 @@ class Result {
     map[gData].forEach((element) {
       l.add(element);
     });
-
-    map = null;
 
     return Result(
         data: l,

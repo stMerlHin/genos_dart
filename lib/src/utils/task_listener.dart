@@ -1,24 +1,26 @@
 import 'package:meta/meta.dart';
 
-abstract class LinkedTaskListener extends TaskListener {
-  void onPartialSuccess([id, result]);
-  void onPartialError([id, e]);
+mixin LinkedTaskListener implements TaskListener {
+  @override
+  bool disposed = false;
+  void onPartialSuccess([result, id]);
+  void onPartialError(e, [id]);
 }
 
-class LinkedTaskListenerCallbacks extends LinkedTaskListener
-    with TaskCallbacks {
+class LinkedTaskListenerCallbacks with LinkedTaskListener, TaskCallbacks {
   final void Function(dynamic, dynamic)? onPartialSuccessCalled;
   final void Function(dynamic, dynamic)? onPartialErrorCalled;
 
   LinkedTaskListenerCallbacks({
-    required void Function() onSuccessCalled,
-    required void Function(dynamic) onErrorCalled,
+    required void Function([dynamic, dynamic]) onSuccessCalled,
+    required void Function(dynamic, [dynamic]) onErrorCalled,
     this.onPartialSuccessCalled,
     this.onPartialErrorCalled,
-    void Function(int)? onProgressCalled,
-    void Function()? onPauseCalled,
-    void Function()? onResumeCalled,
-    void Function()? onCancelCalled,
+    void Function(int, [dynamic])? onProgressCalled,
+    void Function([dynamic])? onPauseCalled,
+    void Function([dynamic])? onResumeCalled,
+    void Function([dynamic])? onCancelCalled,
+    bool autoDispose = false,
   }) {
     this.onSuccessCalled = onSuccessCalled;
     this.onErrorCalled = onErrorCalled;
@@ -26,93 +28,102 @@ class LinkedTaskListenerCallbacks extends LinkedTaskListener
     this.onPauseCalled = onPauseCalled;
     this.onResumeCalled = onResumeCalled;
     this.onCancelCalled = onCancelCalled;
+    this.autoDispose = autoDispose;
   }
 
   @mustCallSuper
   @override
-  void onPartialError([id, e]) {
-    onPartialErrorCalled?.call(id, e);
+  void onPartialError([e, id]) {
+    onPartialErrorCalled?.call(e, id);
   }
 
   @mustCallSuper
   @override
-  void onPartialSuccess([id, result]) {
-    onPartialSuccessCalled?.call(id, result);
+  void onPartialSuccess([result, id]) {
+    onPartialSuccessCalled?.call(result, id);
   }
 }
 
-abstract class TaskListener {
-  void onSuccess([s]);
+mixin TaskListener {
+  bool disposed = false;
+  void onSuccess([s, id]);
 
-  void onProgress(int percent);
+  void onProgress(int percent, [id]);
 
-  void onError([e]);
+  void onError([e, id]);
 
-  void onPause() {}
+  void onPause([id]) {}
 
-  void onResume() {}
+  void onResume([id]) {}
 
-  void onCancel() {}
+  void onCancel([id]) {}
 }
 
 mixin TaskCallbacks on TaskListener {
-  late final void Function() onSuccessCalled;
+  late final void Function([dynamic, dynamic]) onSuccessCalled;
 
-  late final void Function(dynamic) onErrorCalled;
+  late final void Function(dynamic, [dynamic]) onErrorCalled;
 
-  late final void Function(int)? onProgressCalled;
+  late final void Function(int, [dynamic])? onProgressCalled;
 
-  late final void Function()? onPauseCalled;
+  late final void Function([dynamic])? onPauseCalled;
 
-  late final void Function()? onResumeCalled;
+  late final void Function([dynamic])? onResumeCalled;
 
-  late final void Function()? onCancelCalled;
+  late final void Function([dynamic])? onCancelCalled;
+
+  @protected
+  bool autoDispose = false;
 
   @mustCallSuper
   @override
-  void onCancel() {
-    onCancelCalled?.call();
+  void onCancel([id]) {
+    onCancelCalled?.call(id);
   }
 
   @override
   @mustCallSuper
-  void onError([e]) {
-    onErrorCalled(e);
+  void onError([e, id]) {
+    onErrorCalled(e, id);
   }
 
   @mustCallSuper
   @override
-  void onProgress(int percent) {
-    onProgressCalled?.call(percent);
+  void onProgress(int percent, [id]) {
+    onProgressCalled?.call(percent, id);
   }
 
   @mustCallSuper
   @override
-  void onSuccess([s]) {
-    onSuccessCalled();
+  void onSuccess([s, id]) {
+    if (autoDispose) {
+      disposed = true;
+    }
+    onSuccessCalled(s, id);
   }
 
   @mustCallSuper
   @override
-  void onPause() {
-    onPauseCalled?.call();
+  void onPause([id]) {
+    onPauseCalled?.call(id);
   }
 
   @mustCallSuper
   @override
-  void onResume() {
-    onResumeCalled?.call();
+  void onResume([id]) {
+    onResumeCalled?.call(id);
   }
 }
 
-class TaskListenerCallbacks extends TaskListener with TaskCallbacks {
+class TaskListenerCallbacks with TaskListener, TaskCallbacks {
   TaskListenerCallbacks({
-    required void Function() onSuccessCalled,
-    required void Function(dynamic) onErrorCalled,
-    void Function(int)? onProgressCalled,
-    void Function()? onPauseCalled,
-    void Function()? onResumeCalled,
-    void Function()? onCancelCalled,
+    required void Function([dynamic, dynamic]) onSuccessCalled,
+    required void Function(dynamic, [dynamic]) onErrorCalled,
+    void Function(int, [dynamic])? onProgressCalled,
+    void Function([dynamic])? onPauseCalled,
+    void Function([dynamic])? onResumeCalled,
+    void Function([dynamic])? onCancelCalled,
+    bool autoDispose = false,
   }) {
     this.onSuccessCalled = onSuccessCalled;
     this.onErrorCalled = onErrorCalled;
@@ -120,5 +131,6 @@ class TaskListenerCallbacks extends TaskListener with TaskCallbacks {
     this.onPauseCalled = onPauseCalled;
     this.onResumeCalled = onResumeCalled;
     this.onCancelCalled = onCancelCalled;
+    this.autoDispose = autoDispose;
   }
 }
