@@ -542,7 +542,7 @@ class SingleListener {
         tags[listener.table]!
             .removeWhere((element) => element == listener.tagsValue);
 
-        print('TAGS BEFORE DELETE ${tags[listener.table]}');
+        print('TAGS AFTER DELETE ${tags[listener.table]}');
         if (tags[listener.table]!.isEmpty) {
           tags.remove(listener.table);
           if (tags.isEmpty) {
