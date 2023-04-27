@@ -57,6 +57,9 @@ class SingleListenerProvider {
     SingleLowLevelDataListener listener, {
     bool secure = true,
   }) {
+    
+    listener.init();
+    
     if (singleListener == null) {
       singleListener = SingleListener(
         tags: {
@@ -101,18 +104,32 @@ class SingleListenerProvider {
     }
     listeners.add(listener);
   }
+  
+  void update(SingleLowLevelDataListener listener) {
+    _updateSource(listener);
+    listener.update();
+  }
 
   void dispose(SingleLowLevelDataListener listener) {
+    _dispose(listener);
+  }
+
+  void _dispose(SingleLowLevelDataListener listener, [bool commit = true]) {
     if (listeners.where((element) => element.key == listener.key).length > 1) {
       listeners.remove(listener);
     } else {
       listeners.remove(listener);
       if (listeners.isNotEmpty) {
-        singleListener?.deleteSource(listener);
+        singleListener?.deleteSource(listener, commit: commit);
       } else {
         disposeAll();
       }
     }
+  }
+
+  void _updateSource(SingleLowLevelDataListener listener) {
+    _dispose(listener, false);
+    addListener(listener);
   }
 
   void disposeAll() {
@@ -136,8 +153,26 @@ mixin LowLevelDataListener implements DataListenerAction {
 
 mixin SingleLowLevelDataListener implements DataListenerAction {
   List<String?> get tags;
+  
+  List<String?> get effectiveValues => _effectiveValues;
+  
+  late List<String?> _effectiveValues;
+
+  void _init() {
+    _effectiveValues = tags;
+  }
+  
+  @mustCallSuper
+  void init() {
+    _init();
+  }
+
+  @mustCallSuper
+  void update() {
+    _init();
+  }
 
   @override
-  String get key => '$table/${tags.toSplitableString()}';
-  String get tagsValue => tags.toSplitableString();
+  String get key => '$table/${effectiveValues.toSplitableString()}';
+  String get tagsValue => effectiveValues.toSplitableString();
 }

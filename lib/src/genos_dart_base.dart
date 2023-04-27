@@ -534,7 +534,7 @@ class SingleListener {
     }
   }
 
-  void deleteSource(SingleLowLevelDataListener listener) {
+  void deleteSource(SingleLowLevelDataListener listener, {bool commit = true}) {
     if (tags.isNotEmpty) {
       if (tags[listener.table] != null &&
           tags[listener.table]!.contains(listener.tagsValue)) {
@@ -548,12 +548,16 @@ class SingleListener {
           if (tags.isEmpty) {
             //No element provided so we dispose the listener
             dispose();
-          } else {
-            _webSocket.sink.add(_toJson(update: true));
+          } else if(commit) {
+            _commitChange();
           }
         }
       }
     }
+  }
+
+  void _commitChange() {
+    _webSocket.sink.add(_toJson(update: true));
   }
 
   String _toJson({bool? update}) {
