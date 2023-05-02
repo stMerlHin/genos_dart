@@ -42,102 +42,6 @@ abstract class BaseDataListenerProvider {
   }
 }
 
-class SingleListenerProvider {
-  @protected
-  SingleListener? singleListener;
-  @protected
-  final List<SingleLowLevelDataListener> listeners = [];
-  static final SingleListenerProvider _instance = SingleListenerProvider._();
-
-  SingleListenerProvider._();
-
-  static Future<SingleListenerProvider> get instance async => _instance;
-
-  void addListener(
-    SingleLowLevelDataListener listener, {
-    bool secure = true,
-  }) {
-    
-    listener.init();
-    
-    if (singleListener == null) {
-      singleListener = SingleListener(
-        tags: {
-          listener.table: [listener.tagsValue]
-        },
-      );
-      singleListener?.listen(
-        (change) {
-          if(change.tag == 'genos.all') {
-            listeners.where((element) => element.table == change.table
-            ).forEach((element) {
-              element.notify(change);
-            });
-          } else if (change.changeType == ChangeType.none) {
-            for (var element in listeners) {
-              element.notify(change);
-            }
-          } else {
-            listeners.where((element) => element.table == change.table
-            ).forEach((element) {
-              bool shouldSink = true;
-              if (element.tags.isNotEmpty) {
-                //for (var ele in element.tags) {
-                if (change.tag != element.tagsValue) {
-                  shouldSink = false;
-                  //}
-                }
-              }
-              if (shouldSink) {
-                element.notify(change);
-              }
-            });
-          }
-        },
-        secure: secure,
-        reflexive: true,
-      );
-    } else if (listeners
-        .where((element) => element.key == listener.key)
-        .isEmpty) {
-      singleListener!.addSource(listener);
-    }
-    listeners.add(listener);
-  }
-  
-  void update(SingleLowLevelDataListener listener) {
-    _updateSource(listener);
-    listener.update();
-  }
-
-  void dispose(SingleLowLevelDataListener listener) {
-    _dispose(listener);
-  }
-
-  void _dispose(SingleLowLevelDataListener listener, [bool commit = true]) {
-    if (listeners.where((element) => element.key == listener.key).length > 1) {
-      listeners.remove(listener);
-    } else {
-      listeners.remove(listener);
-      if (listeners.isNotEmpty) {
-        singleListener?.deleteSource(listener, commit: commit);
-      } else {
-        disposeAll();
-      }
-    }
-  }
-
-  void _updateSource(SingleLowLevelDataListener listener) {
-    _dispose(listener, false);
-    addListener(listener);
-  }
-
-  void disposeAll() {
-    singleListener?.dispose();
-    listeners.clear();
-  }
-}
-
 abstract class DataListenerAction {
   String get table;
   String get key;
@@ -152,14 +56,17 @@ mixin LowLevelDataListener implements DataListenerAction {
 }
 
 mixin SingleLowLevelDataListener implements DataListenerAction {
-  List<String?> get tags;
+  List<String> get tags;
+
+  bool _initialized = false;
   
-  List<String?> get effectiveValues => _effectiveValues;
+  List<String> get effectiveValues => _effectiveValues;
   
-  late List<String?> _effectiveValues;
+  late List<String> _effectiveValues;
 
   void _init() {
     _effectiveValues = tags;
+    _initialized = true;
   }
   
   @mustCallSuper
@@ -171,6 +78,8 @@ mixin SingleLowLevelDataListener implements DataListenerAction {
   void update() {
     _init();
   }
+
+  bool get initialized => _initialized;
 
   @override
   String get key => '$table/${effectiveValues.toSplitableString()}';

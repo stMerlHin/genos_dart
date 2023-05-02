@@ -15,6 +15,8 @@ export 'src/utils/task_wrapper.dart';
 export 'src/utils/linked_tasks.dart';
 export 'src/utils/linked_tasks_wrapper.dart';
 export 'src/utils/task_manager_mixin.dart';
+export 'src/utils/single_listener_provider.dart';
+export 'src/utils/single_listener_object.dart';
 export 'src/utils/download_task_wrapper.dart';
 export 'src/utils/upload_task_wrapper.dart';
 export 'src/utils/task_listener.dart';
