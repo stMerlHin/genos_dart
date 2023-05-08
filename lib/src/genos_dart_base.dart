@@ -31,6 +31,7 @@ class Genos {
   static bool _initialized = false;
   static bool _autoLogout = false;
   static bool _cache = true;
+  static late bool _securedListener;
   late Function(Genos) _onInitialization;
   late Function()? _onLoginOut;
   late Function(Map<String, String>) _onConfigChanged;
@@ -69,6 +70,7 @@ class Genos {
     String appName = 'GENOS',
     bool enableMultiThreading = true,
     int? isolatesCount,
+    bool secureListener = true,
     bool log = false,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
@@ -93,6 +95,7 @@ class Genos {
         }
         _executorWarmedUp = true;
       }
+      _securedListener = secureListener;
       _connectionId = Uuid().v1();
       _tour = tour;
       _privateDirectory = appPrivateDirectory;
@@ -191,6 +194,8 @@ class Genos {
         ? '$baseUrl' 'auth/email/signing'
         : '$unsecureBaseUrl' 'auth/email/signing';
   }
+
+  static bool get securedListener => _securedListener;
 
   static String get qrLoginRoute => 'auth/qr_code/listen';
 

@@ -19,9 +19,7 @@ mixin SingleListenerProviderMixin {
   final List<SingleLowLevelDataListener> listeners = [];
 
   void addListener(
-      SingleLowLevelDataListener listener, {
-        bool secure = true,
-      }) {
+      SingleLowLevelDataListener listener) {
 
     listener.init();
 
@@ -59,7 +57,7 @@ mixin SingleListenerProviderMixin {
             });
           }
         },
-        secure: secure,
+        secure: Genos.securedListener,
         reflexive: true,
       );
     } else if (listeners

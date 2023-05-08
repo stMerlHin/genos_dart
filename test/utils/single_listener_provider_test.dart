@@ -27,6 +27,7 @@ void main() async {
       encryptionKey: '',
       appSignature: '',
       appWsSignature: '',
+      secureListener: false,
       appPrivateDirectory: '',
       onInitialization: (genos) async {
 
@@ -58,7 +59,7 @@ void main() async {
     group("Adding listener", () {
       test(
           'SingleListenerProvider should automatically initialize new added listeners', () {
-        listenerProvider.addListener(listenerObject, secure: false);
+        listenerProvider.addListener(listenerObject);
         expect(listenerObject.initialized, isTrue);
       });
 
