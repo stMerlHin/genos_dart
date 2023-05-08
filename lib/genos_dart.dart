@@ -22,3 +22,4 @@ export 'src/utils/upload_task_wrapper.dart';
 export 'src/utils/task_listener.dart';
 export 'src/utils/data_listener_provider.dart';
 export 'src/model/result.dart';
+export 'package:worker_manager/worker_manager.dart';
