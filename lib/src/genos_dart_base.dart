@@ -50,7 +50,7 @@ class Genos {
     required String appPrivateDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
-    DBMS dbType = DBMS.mysql,
+    DBMS dbms = DBMS.mysql,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
   }) async {
@@ -64,8 +64,8 @@ class Genos {
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
       auth = await Auth.instance;
-      _dbms = dbType;
-      GDirectRequest.dbType = dbType;
+      _dbms = dbms;
+      GDirectRequest.dbType = dbms;
       auth.addLoginListener(_onUserLoggedOut);
 
       _gHost = host;
