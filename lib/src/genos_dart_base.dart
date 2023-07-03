@@ -706,7 +706,7 @@ class GDirectRequest {
       gDateTimeEnable: dateTimeValueEnabled,
       gType: type.toString(),
       gValues: values,
-      gDbType: dbType.toString(),
+      gDbms: dbType.toString(),
       gSql: sql,
     });
   }
