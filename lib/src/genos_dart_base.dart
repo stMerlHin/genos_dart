@@ -63,8 +63,8 @@ class Genos {
       _appSignature = appSignature;
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
-      auth = await Auth.instance;
       _dbms = dbms;
+      auth = await Auth.instance;
       auth.addLoginListener(_onUserLoggedOut);
 
       _gHost = host;
