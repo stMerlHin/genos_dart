@@ -8,6 +8,7 @@ const String gConnectionId = 'connection_id';
 const String gEvent = 'event';
 const String gDateTime = 'date_time';
 const String gTable = 'table';
+const String gDbType = 'db_type';
 const String gTables = 'tables';
 const String gValues = 'values';
 const String gDateTimeEnable = 'date_time_enabled';

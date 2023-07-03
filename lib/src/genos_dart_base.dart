@@ -11,6 +11,7 @@ class Genos {
   static String _gHost = gLocalhost;
   static String _gPort = gPort;
   static late int _tour;
+  static late DbType _dbType;
   static late String _connectionId;
   static String _unsecureGPort = '80';
   static String _privateDirectory = '';
@@ -49,6 +50,7 @@ class Genos {
     required String appPrivateDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
+    DbType dbType = DbType.mysql,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
   }) async {
@@ -62,6 +64,8 @@ class Genos {
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
       auth = await Auth.instance;
+      _dbType = dbType;
+      GDirectRequest.dbType = dbType;
       auth.addLoginListener(_onUserLoggedOut);
 
       _gHost = host;
@@ -96,6 +100,8 @@ class Genos {
         {'host': _gHost, 'port': _gPort, 'unsecurePort': _unsecureGPort});
 
   }
+
+  static DbType get dbType => _dbType;
 
   static Genos get instance => _instance;
   static int get tour => _tour;
@@ -238,6 +244,21 @@ class Genos {
       }
     } catch (e) {
       onError(e.toString());
+    }
+  }
+}
+
+enum DbType {
+  postgres,
+  mysql;
+
+  @override
+  String toString() {
+    switch(this) {
+      case DbType.postgres:
+        return 'Postgres';
+      case DbType.mysql:
+        return 'Mysql';
     }
   }
 }
@@ -560,6 +581,7 @@ class GDirectRequest {
   String sql;
   GRequestType type;
   String table;
+  static late DbType dbType;
   bool dateTimeValueEnabled;
   List<dynamic>? values;
 
@@ -684,6 +706,7 @@ class GDirectRequest {
       gDateTimeEnable: dateTimeValueEnabled,
       gType: type.toString(),
       gValues: values,
+      gDbType: dbType.toString(),
       gSql: sql,
     });
   }
