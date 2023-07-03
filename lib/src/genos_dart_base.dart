@@ -65,7 +65,7 @@ class Genos {
       _onLoginOut = onUserLoggedOut;
       auth = await Auth.instance;
       _dbms = dbms;
-      GDirectRequest.dbType = dbms;
+      GDirectRequest.dbms = dbms;
       auth.addLoginListener(_onUserLoggedOut);
 
       _gHost = host;
@@ -581,7 +581,7 @@ class GDirectRequest {
   String sql;
   GRequestType type;
   String table;
-  static late DBMS dbType;
+  static late DBMS dbms;
   bool dateTimeValueEnabled;
   dynamic values;
 
@@ -706,7 +706,7 @@ class GDirectRequest {
       gDateTimeEnable: dateTimeValueEnabled,
       gType: type.toString(),
       gValues: values,
-      gDbms: dbType.toString(),
+      gDbms: dbms.toString(),
       gSql: sql,
     });
   }
