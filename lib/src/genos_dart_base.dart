@@ -11,7 +11,7 @@ class Genos {
   static String _gHost = gLocalhost;
   static String _gPort = gPort;
   static late int _tour;
-  static late DbType _dbType;
+  static late DBMS _dbms;
   static late String _connectionId;
   static String _unsecureGPort = '80';
   static String _privateDirectory = '';
@@ -50,7 +50,7 @@ class Genos {
     required String appPrivateDirectory,
     required Future Function(Genos) onInitialization,
     Function()? onUserLoggedOut,
-    DbType dbType = DbType.mysql,
+    DBMS dbType = DBMS.mysql,
     int tour = 3,
     Function(Map<String, String>)? onConfigChanged,
   }) async {
@@ -64,7 +64,7 @@ class Genos {
       _appWsSignature = appWsSignature;
       _onLoginOut = onUserLoggedOut;
       auth = await Auth.instance;
-      _dbType = dbType;
+      _dbms = dbType;
       GDirectRequest.dbType = dbType;
       auth.addLoginListener(_onUserLoggedOut);
 
@@ -101,7 +101,7 @@ class Genos {
 
   }
 
-  static DbType get dbType => _dbType;
+  static DBMS get dbms => _dbms;
 
   static Genos get instance => _instance;
   static int get tour => _tour;
@@ -248,16 +248,16 @@ class Genos {
   }
 }
 
-enum DbType {
+enum DBMS {
   postgres,
   mysql;
 
   @override
   String toString() {
     switch(this) {
-      case DbType.postgres:
+      case DBMS.postgres:
         return 'Postgres';
-      case DbType.mysql:
+      case DBMS.mysql:
         return 'Mysql';
     }
   }
@@ -581,9 +581,9 @@ class GDirectRequest {
   String sql;
   GRequestType type;
   String table;
-  static late DbType dbType;
+  static late DBMS dbType;
   bool dateTimeValueEnabled;
-  List<dynamic>? values;
+  dynamic values;
 
   GDirectRequest({
     required this.sql,
@@ -597,7 +597,7 @@ class GDirectRequest {
   ///[dateTimeValueEnabled] inform genos that the query will contain Timestamp values
   factory GDirectRequest.select({
     required String sql,
-    List<dynamic>? values,
+    dynamic values,
     bool dateTimeValueEnabled = true,
   }) {
     return GDirectRequest(
@@ -612,7 +612,7 @@ class GDirectRequest {
   factory GDirectRequest.insert({
     required String table,
     required String sql,
-    List<dynamic>? values,
+    dynamic values,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
@@ -649,7 +649,7 @@ class GDirectRequest {
   factory GDirectRequest.update({
     required String table,
     required String sql,
-    List<dynamic>? values,
+    dynamic values,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
@@ -662,7 +662,7 @@ class GDirectRequest {
   factory GDirectRequest.delete({
     required String table,
     required String sql,
-    List<dynamic>? values,
+    dynamic values,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
@@ -675,7 +675,7 @@ class GDirectRequest {
   factory GDirectRequest.create({
     required String table,
     required String sql,
-    List<dynamic>? values,
+    dynamic values,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
@@ -688,7 +688,7 @@ class GDirectRequest {
   factory GDirectRequest.drop({
     required String table,
     required String sql,
-    List<dynamic>? values,
+    dynamic values,
   }) {
     return GDirectRequest(
         connectionId: Genos.connectionId,
